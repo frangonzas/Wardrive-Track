@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Wardrive Track · Local Wi-Fi Intelligence</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">◎</div><div><b>WARDRIVE <span>TRACK</span></b><small>LOCAL NETWORK EXPLORER / 0.1</small></div></div>
+    <div class="side-section"><div class="section-label">ESPACIO DE TRABAJO</div>
+      <div class="nav-selected"><span>◈</span> Panel de análisis <em>ACTIVO</em></div>
+      <p class="side-copy">Importa capturas Wi-Fi y registros GPS. Los datos se procesan en tu propio equipo.</p>
+    </div>
+    <div class="side-section"><div class="section-label">FUENTES DE DATOS</div>
+      <label class="drop-zone" id="drop" for="fileInput"><span class="upload-symbol">＋</span><strong>Importar archivos</strong><span>Arrastra o selecciona</span><small>.pcap .pcapng .log .txt .csv</small></label>
+      <input type="file" id="fileInput" multiple accept=".pcap,.pcapng,.log,.txt,.csv" hidden>
+      <div class="file-list" id="files"><span class="empty-small">Sin archivos importados</span></div>
+      <button class="action subtle" id="demoBtn">▸ &nbsp; Cargar demostración</button>
+    </div>
+    <div class="side-bottom">
+      <div class="status-dot"><i></i> PROCESAMIENTO LOCAL</div>
+      <small>Redes y GPS no se envían a ningún servidor externo. Los mapas de calles usan teselas de OpenStreetMap cuando hay conexión.</small>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div class="crumb">WORKSPACE <span>/</span> ANALYTICS <span>/</span> OVERVIEW</div><div class="topright"><span class="online">●</span> MOTOR LISTO <span class="sep">│</span> <b>v0.1.0</b></div></header>
+    <div class="content">
+      <div class="intro"><div><div class="eyebrow">ANÁLISIS DE REDES · GEOINT OFFLINE-FIRST</div><h1>Wardrive <span>Track</span></h1><p>Exploración de capturas 802.11, cobertura observada y recorridos GPS.</p></div>
+        <div class="toolbar"><button class="action" id="csvBtn" title="Exportar resumen de redes">↓ CSV</button><button class="action primary" id="geoBtn" title="Exportar puntos y ruta">↓ GeoJSON</button></div>
+      </div>
+      <section class="metrics" aria-label="Resumen de análisis">
+        <div class="metric"><span>REDES DETECTADAS</span><b id="statNetworks">0</b><small>Identificadas por BSSID</small><div class="metric-icon">⌁</div></div>
+        <div class="metric"><span>REDES CON GPS</span><b id="statLocated">0</b><small>Posiciones de observación</small><div class="metric-icon mint">⌖</div></div>
+        <div class="metric"><span>OBSERVACIONES</span><b id="statSights">0</b><small>Capturas y registros</small><div class="metric-icon blue">≋</div></div>
+        <div class="metric"><span>PUNTOS DE RUTA</span><b id="statGPS">0</b><small>Coordenadas de GPS</small><div class="metric-icon purple">◇</div></div>
+      </section>
+      <section class="map-card">
+        <div class="panel-head"><div><div class="eyebrow">VISOR GEOGRÁFICO</div><h2>Mapa de observaciones</h2></div><div class="legend"><span><i class="dot-green"></i> Wi-Fi con GPS</span><span><i class="dot-blue"></i> Recorrido GPS</span></div></div>
+        <div class="map-region"><div id="map"></div><canvas id="offlineMap" aria-label="Plano de puntos sin mapas de calles"></canvas><div class="map-empty" id="emptyMap"><span class="empty-orbit">◎</span><b>Tu mapa comienza aquí</b><span>Importa un registro con GPS o inicia la demostración.</span></div><div class="map-label" id="mapLabel">SIN COORDENADAS</div></div>
+        <div class="map-foot"><span>⌖ &nbsp; Los marcadores indican <strong>dónde se observó</strong> la señal; no necesariamente dónde está el router.</span><span>Correlación GPS ±8 s</span></div>
+      </section>
+      <section class="table-panel"><div class="panel-head"><div><div class="eyebrow">INVENTARIO DE CAPTURA</div><h2>Redes Wi-Fi</h2></div><div class="table-controls"><input id="search" type="search" placeholder="⌕  Buscar SSID o BSSID" aria-label="Buscar redes"><select id="filter" aria-label="Filtro GPS"><option value="all">Todas las redes</option><option value="located">Con GPS</option><option value="unlocated">Sin GPS</option></select></div></div>
+        <div class="table-scroll"><table><thead><tr><th>SSID / BSSID</th><th>CANAL</th><th>SEÑAL</th><th>OBSERVACIONES</th><th>GEOLOCALIZACIÓN</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="no-data">Todavía no hay redes. Importa un archivo para comenzar.</td></tr></tbody></table></div>
+        <div class="table-foot"><span id="resultCount">0 redes en el inventario</span><button class="link-button" id="clearBtn">Limpiar sesión ↺</button></div>
+      </section>
+      <footer>WARDRIVE TRACK <span>✦</span> PRIVACIDAD LOCAL · CAPTURAS AUTORIZADAS · PYTHON STANDARD LIBRARY</footer>
+    </div>
+  </main>
+</div>
+<div role="status" aria-live="polite" class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
