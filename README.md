@@ -1,5 +1,7 @@
 # Wardrive Track
 
+![Pruebas multiplataforma](https://github.com/frangonzas/Wardrive-Track/actions/workflows/tests.yml/badge.svg)
+
 **Análisis local y visualización geográfica de capturas Wi-Fi y registros GPS.**
 
 Proyecto multiplataforma desarrollado en **Python 3.10+**, con interfaz web local. Importa archivos **PCAP, PCAPNG, CSV, LOG y TXT**, identifica redes Wi-Fi, cruza observaciones con trazas GPS por fecha/hora, explora los resultados sobre un mapa y exporta a **CSV y GeoJSON**.
