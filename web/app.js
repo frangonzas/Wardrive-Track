@@ -318,6 +318,7 @@ function downloadBlob(filename, mime, data) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function safeCSV(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
   let text = v === null || v === undefined ? '' : String(v);
   if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
   return '"' + text.replaceAll('"', '""') + '"';
