@@ -1,6 +1,6 @@
 'use strict';
 
-/* Wardrive Track v0.2.0 — interfaz sin frameworks.
+/* Wardrive Track — interfaz sin frameworks.
  * Los SSID, nombres Bluetooth y MAC siempre se insertan como textContent.
  * Los filtros son locales y no envían datos a servicios de terceros.
  */
@@ -273,6 +273,12 @@ function renderFiles() {
 }
 
 function render() {
+  if (!state.app || typeof state.app.version !== 'string' || !state.app.creator) {
+    notify('Esta instalación tiene un motor antiguo. Actualiza Wardrive Track y reinicia el proceso.', true);
+    return;
+  }
+  const label = el('runtimeVersion');
+  if (label) label.textContent = 'v' + state.app.version + ' · ' + state.app.creator;
   el('statNetworks').textContent = number(state.stats.networks);
   el('statWifi').textContent = number(state.stats.wifi);
   el('statBt').textContent = number((state.stats.ble || 0) + (state.stats.bluetooth || 0));

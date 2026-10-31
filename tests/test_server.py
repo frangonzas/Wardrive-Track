@@ -9,6 +9,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from wardrive_track.core import Session
+from wardrive_track import __version__, CREATOR
 from wardrive_track.server import Handler
 
 
@@ -35,10 +36,21 @@ class LocalServerTests(unittest.TestCase):
             data = json.loads(response.read())
             self.assertEqual(response.status, 200)
             self.assertEqual(data["stats"]["wifi"], 0)
+            self.assertEqual(data["app"]["version"], __version__)
+            self.assertEqual(data["app"]["creator"], CREATOR)
         with urlopen(self.address, timeout=5) as response:
             html = response.read().decode()
             self.assertIn("Wardrive Track", html)
             self.assertIn("securityFilter", html)
+            self.assertIn("typeFilter", html)
+            self.assertIn("v" + __version__, html)
+            self.assertIn(CREATOR, html)
+            self.assertNotIn("__WARDRIVE_VERSION__", html)
+            self.assertIn("/app.js?v=" + __version__, html)
+        with urlopen(self.address + "/api/about", timeout=5) as response:
+            about = json.loads(response.read())
+            self.assertEqual(about["version"], __version__)
+            self.assertEqual(about["creator"], CREATOR)
 
     def test_demo_and_export(self):
         req = Request(self.address + "/api/demo", method="POST", data=b"")

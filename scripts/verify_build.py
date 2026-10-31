@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+# Permite invocar el script desde cualquier directorio de trabajo.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from wardrive_track import __version__, CREATOR
 
 

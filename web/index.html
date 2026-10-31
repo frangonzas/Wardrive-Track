@@ -4,14 +4,14 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark"><meta name="theme-color" content="#0a101b">
 <meta name="description" content="Wardrive Track: análisis local de capturas Wi-Fi y Bluetooth/BLE de ESP32 Marauder, con GPS, filtros de cifrado y exportaciones.">
-<title>Wardrive Track · Wireless Intelligence</title>
+<title>Wardrive Track v__WARDRIVE_VERSION__ · __WARDRIVE_CREATOR__</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=__WARDRIVE_VERSION__">
 </head>
 <body>
 <div class="shell">
 <aside class="sidebar">
-  <div class="brand"><div class="brand-icon">◎</div><div><b>WARDRIVE <span>TRACK</span></b><small>WIRELESS INTELLIGENCE / v0.2</small></div></div>
+  <div class="brand"><div class="brand-icon">◎</div><div><b>WARDRIVE <span>TRACK</span></b><small>WIRELESS INTELLIGENCE / v__WARDRIVE_VERSION__ · FRAN GONZAS</small></div></div>
   <div class="side-section"><div class="section-label">ESPACIO DE TRABAJO</div>
     <div class="nav-selected"><span>◈</span> Explorador de radio <em>EN LÍNEA</em></div>
     <p class="side-copy">Análisis pasivo de archivos Wi-Fi, Bluetooth y BLE. Visualización de observaciones con GPS, sin rastreo externo.</p>
@@ -29,7 +29,7 @@
   <div class="side-bottom"><div class="status-dot"><i></i> SERVIDOR LOCAL · 127.0.0.1</div><small>Los archivos se procesan localmente. Los mapas de calles, si están activos, solicitan teselas externas. Solo importa capturas autorizadas.</small></div>
 </aside>
 <main class="main">
-  <header class="topbar"><div class="crumb">WORKSPACE <span>/</span> MARAUDER DATA <span>/</span> EXPLORER</div><div class="topright"><span class="online">●</span> ANÁLISIS PASIVO <span class="sep">│</span> <b>v0.2.0</b></div></header>
+  <header class="topbar"><div class="crumb">WORKSPACE <span>/</span> MARAUDER DATA <span>/</span> EXPLORER</div><div class="topright"><span class="online">●</span> ANÁLISIS PASIVO <span class="sep">│</span> <b id="runtimeVersion">v__WARDRIVE_VERSION__ · __WARDRIVE_CREATOR__</b></div></header>
   <div class="content">
     <div class="intro"><div><div class="eyebrow">WIFI / BLUETOOTH / GPS · MULTIPLATAFORMA</div><h1>Wardrive <span>Track</span></h1><p>Explora capturas del ESP32 Marauder y registros compatibles desde una única consola.</p></div><div class="toolbar">
       <button class="action" id="csvBtn" type="button">↓ CSV</button><button class="action primary" id="geoBtn" type="button">↓ GeoJSON</button>
@@ -70,10 +70,10 @@
       <div class="table-scroll"><table><thead><tr><th>NOMBRE / IDENTIFICADOR</th><th>TECNOLOGÍA</th><th>SEGURIDAD</th><th>CANAL</th><th>RSSI</th><th>VECES</th><th>GPS</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="no-data">Importa un archivo para comenzar.</td></tr></tbody></table></div>
       <div class="table-foot"><span id="resultCount">0 registros</span><button class="link-button" id="clearBtn" type="button">Vaciar sesión ↺</button></div>
     </section>
-    <footer>WARDRIVE TRACK 0.2 <span>✦</span> PYTHON · ANÁLISIS LOCAL · DOCUMENTACIÓN EN ESPAÑOL</footer>
+    <footer>__WARDRIVE_APP__ v__WARDRIVE_VERSION__ <span>✦</span> CREADOR: __WARDRIVE_CREATOR__ · PYTHON · ANÁLISIS LOCAL</footer>
   </div>
 </main>
 </div>
 <div role="status" aria-live="polite" class="toast" id="toast"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="/app.js?v=__WARDRIVE_VERSION__"></script>
 </body></html>

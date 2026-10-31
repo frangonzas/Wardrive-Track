@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Comprobar sintaxis
-        run: python -m compileall -q run.py wardrive_track tests
+        run: python -m compileall -q run.py build.py wardrive_track tests scripts
       - name: Verificar sintaxis JavaScript
         run: node --check web/app.js
       - name: Ejecutar pruebas
