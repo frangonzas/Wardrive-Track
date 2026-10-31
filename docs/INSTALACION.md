@@ -33,11 +33,18 @@ Si alguno falta, instala Python desde https://www.python.org/downloads/macos/ y 
 
 ~~~bash
 cd ~
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
 ~~~
 
-### Paso 3: inicia la aplicación
+### Paso 3: verifica v0.3.0 y después inicia la aplicación
+
+~~~bash
+python3 run.py --version
+python3 run.py --diagnostico
+~~~
+
+### Arranque
 
 ~~~bash
 python3 run.py
@@ -68,8 +75,8 @@ Verifica y descarga:
 python3 --version
 git --version
 cd ~
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
 python3 run.py
 ~~~
 
@@ -93,8 +100,10 @@ Abre **PowerShell** y ejecuta:
 py --version
 git --version
 cd $HOME
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
+py -3 run.py --version
+py -3 run.py --diagnostico
 py -3 run.py
 ~~~
 
@@ -142,7 +151,7 @@ Abre Terminal/PowerShell y entra en la carpeta clonada.
 **macOS/Linux:**
 
 ~~~bash
-cd ~/Wardrive-Track
+cd ~/Wardrive-Track-v0.3.0
 git pull --ff-only
 python3 run.py
 ~~~
@@ -150,7 +159,7 @@ python3 run.py
 **Windows PowerShell:**
 
 ~~~powershell
-cd "$HOME\Wardrive-Track"
+cd "$HOME\Wardrive-Track-v0.3.0"
 git pull --ff-only
 py -3 run.py
 ~~~

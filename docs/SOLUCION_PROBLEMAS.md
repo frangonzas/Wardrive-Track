@@ -109,3 +109,7 @@ No todas las capturas incluyen elementos de seguridad 802.11 completos. Importa 
 ## El ejecutable compilado no arranca
 
 Consulta [COMPILACION.md](COMPILACION.md). Asegúrate de seleccionar un binario compilado para tu sistema operativo y arquitectura; las compilaciones no están firmadas digitalmente. Como alternativa, ejecuta la aplicación directamente desde el código con **python3 run.py** o **py -3 run.py**.
+
+## Se abre Wardrive Track 0.1 o 0.2 en lugar de 0.3.0
+
+Cierra la aplicación anterior con Ctrl+C, cierra sus pestañas y consulta la guía [ACTUALIZACION.md](ACTUALIZACION.md). Los binarios antiguos no se actualizan con git pull: descarga un artifact cuyo nombre incluya **v0.3.0**. Verifica el autor y la versión con el argumento **--version**; el creador de la versión actual es **Fran Gonzas**.

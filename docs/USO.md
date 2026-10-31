@@ -1,4 +1,6 @@
-# Manual de usuario — Wardrive Track 0.2
+# Manual de usuario — Wardrive Track 0.3.0
+
+**Creador: Fran Gonzas.** La versión debe verse en la parte superior de la interfaz. Comprueba la instalación con el comando --version antes de importar archivos.
 
 ## 1. Abrir la aplicación
 
