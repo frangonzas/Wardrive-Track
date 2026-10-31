@@ -14,6 +14,7 @@ import struct
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from .radio import ble_hci_frame, protocol_from_text, security_from_ies, security_from_text
 
 MAX_RECORDS = 60000
 
@@ -58,7 +59,7 @@ def normalize_mac(value: Any) -> str | None:
     return ":".join(s[i:i+2] for i in range(0, 12, 2)).upper()
 
 
-def _record(row: dict[str, Any]) -> tuple[dict | None, dict | None]:
+def _record(row: dict[str, Any], default_protocol: str = 'Wi-Fi') -> tuple[dict | None, dict | None]:
     r = {re.sub(r"[^a-z0-9]", "", str(k).lower()): v for k, v in row.items() if k is not None}
     def get(*aliases):
         for key in aliases:
@@ -71,11 +72,13 @@ def _record(row: dict[str, Any]) -> tuple[dict | None, dict | None]:
     coords = coordinate(lat, lon)
     t = timestamp(get("time", "timestamp", "ts", "firstseen", "datetime", "date", "utc"))
     fix = {"lat": coords[0], "lon": coords[1], "ts": t} if coords else None
-    typ = str(get("type", "networktype") or "WIFI").upper()
+    typ = protocol_from_text(get("type", "networktype", "protocol", "radio"), default_protocol)
     mac = normalize_mac(get("bssid", "mac", "netid", "ap"))
     obs = None
-    if mac and typ in ("WIFI", "WI-FI", "80211", ""):
-        obs = {"bssid": mac, "ssid": str(get("ssid", "name") or ""),
+    if mac:
+        obs = {"bssid": mac, "ssid": str(get("ssid", "name", "devicename", "localname") or ""),
+               "protocol": typ,
+               "security": security_from_text(get("authmode", "security", "encryption", "auth")) if typ == "Wi-Fi" else "No aplica",
                "rssi": number(get("rssi", "signal", "dbm")),
                "channel": number(get("channel", "ch")), "ts": t,
                "lat": coords[0] if coords else None,
@@ -124,7 +127,7 @@ KV_RE = re.compile(r'(?P<key>[A-Za-z_][\w.-]*)\s*[:=]\s*(?:"(?P<quoted>[^"]*)"|(
 DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b")
 
 
-def read_text(data: bytes) -> tuple[list[dict], list[dict], list[str]]:
+def read_text(data: bytes, default_protocol: str = 'Wi-Fi') -> tuple[list[dict], list[dict], list[str]]:
     content = data.decode("utf-8-sig", errors="replace")
     lines = content.splitlines()
     observations: list[dict] = []
@@ -145,7 +148,7 @@ def read_text(data: bytes) -> tuple[list[dict], list[dict], list[str]]:
             if idx >= MAX_RECORDS:
                 warnings.append("Límite de filas alcanzado; se omitió el resto.")
                 break
-            obs, fix = _record(row)
+            obs, fix = _record(row, default_protocol)
             if obs:
                 observations.append(obs)
             if fix:
@@ -177,7 +180,13 @@ def read_text(data: bytes) -> tuple[list[dict], list[dict], list[str]]:
                     match = DATE_RE.search(s)
                     if match:
                         obj["timestamp"] = match.group(0)
-            obs, fix2 = _record(obj)
+            local_protocol = default_protocol
+            if not any(k.lower() in ("type", "networktype", "protocol", "radio") for k in obj):
+                if re.search(r"\b(?:BLE|BTLE)\b", s, re.I):
+                    local_protocol = "BLE"
+                elif re.search(r"\b(?:BLUETOOTH|BT)\b", s, re.I):
+                    local_protocol = "Bluetooth"
+            obs, fix2 = _record(obj, local_protocol)
             if obs:
                 observations.append(obs)
             if fix2:
@@ -275,7 +284,7 @@ def _wifi(packet: bytes, linktype: int, ts: float | None) -> dict | None:
             channel = value[0]
         i += length
     return {"bssid": mac, "ssid": ssid, "rssi": rssi, "channel": channel,
-            "security": "Privada" if capabilities & 0x10 else "Abierta (anunciada)",
+            "security": security_from_ies(capabilities, packet[36:]), "protocol": "Wi-Fi",
             "ts": ts, "lat": None, "lon": None}
 
 
@@ -288,8 +297,8 @@ def _pcap(data: bytes) -> tuple[list[dict], list[str]]:
         return [], ["Cabecera PCAP no válida."]
     endian, divisor = MAGICS[data[:4]]
     linktype = struct.unpack_from(endian + "I", data, 20)[0] & 0xFFFF
-    if linktype not in (105, 127):
-        return [], [f"Linktype {linktype} no compatible: se necesitan tramas Wi-Fi 802.11 o Radiotap."]
+    if linktype not in (105, 127, 187, 201):
+        return [], [f"Linktype {linktype} no compatible: se requieren tramas 802.11, Radiotap o Bluetooth HCI H4."]
     observations: list[dict] = []
     off = 24
     while off + 16 <= len(data) and len(observations) < MAX_RECORDS:
@@ -297,11 +306,16 @@ def _pcap(data: bytes) -> tuple[list[dict], list[str]]:
         off += 16
         if captured > len(data) - off or captured > 8_000_000:
             break
-        obs = _wifi(data[off:off+captured], linktype, sec + fraction / divisor)
-        if obs:
-            observations.append(obs)
+        frame = data[off:off+captured]
+        ts = sec + fraction / divisor
+        if linktype in (187, 201):
+            observations.extend(ble_hci_frame(frame, linktype, ts)[:MAX_RECORDS-len(observations)])
+        else:
+            obs = _wifi(frame, linktype, ts)
+            if obs:
+                observations.append(obs)
         off += captured
-    return observations, ([] if observations else ["No se encontraron beacons ni probe-responses Wi-Fi compatibles."])
+    return observations, ([] if observations else ["No se encontraron anuncios Wi-Fi o BLE compatibles."])
 
 
 def _pcapng(data: bytes) -> tuple[list[dict], list[str]]:
@@ -338,19 +352,23 @@ def _pcapng(data: bytes) -> tuple[list[dict], list[str]]:
             if iface < len(interfaces) and caplen <= size-32:
                 linktype, resolution = interfaces[iface]
                 ts = ((hi << 32) | lo) / resolution
-                obs = _wifi(data[off+28:off+28+caplen], linktype, ts)
-                if obs:
-                    observations.append(obs)
+                frame = data[off+28:off+28+caplen]
+                if linktype in (187, 201):
+                    observations.extend(ble_hci_frame(frame, linktype, ts)[:MAX_RECORDS-len(observations)])
+                else:
+                    obs = _wifi(frame, linktype, ts)
+                    if obs:
+                        observations.append(obs)
         off += size
     if not observations:
-        warnings.append("No se encontraron tramas Wi-Fi compatibles en PCAPNG.")
+        warnings.append("No se encontraron anuncios Wi-Fi o BLE compatibles en PCAPNG.")
     return observations, warnings
 
 
 def parse_file(filename: str, data: bytes) -> tuple[list[dict], list[dict], list[str]]:
     suffix = Path(filename).suffix.lower()
     if suffix in (".log", ".txt", ".csv"):
-        return read_text(data)
+        return read_text(data, "BLE" if filename.lower().startswith(("bt_wardrive", "ble_", "bluetooth_")) else "Wi-Fi")
     if suffix == ".pcap":
         obs, warnings = _pcap(data)
         return obs, [], warnings
