@@ -1,25 +1,31 @@
-# Seguridad y privacidad
+# Seguridad, privacidad y límites
 
-Wardrive Track está diseñado para el análisis **local y pasivo de archivos** que el usuario ya posee. No ejecuta capturas activas, no fuerza autenticaciones, no analiza tráfico de clientes y no consulta proveedores externos para intentar ubicar BSSID.
+Wardrive Track v0.2 es una herramienta de análisis **pasivo y local**. Abre capturas guardadas por el usuario y presenta observaciones Wi-Fi, Bluetooth/BLE y GPS. No inicia conexiones radio ni ejecuta ataques, descifrado, escucha activa o seguimiento de dispositivos.
 
-## Superficie de exposición
+## Datos que pueden ser sensibles
 
-- Servidor web HTTP vinculado a **127.0.0.1**, no a 0.0.0.0.
-- Importaciones limitadas a tipos conocidos y **32 MiB por archivo**.
-- No almacena capturas en disco: los datos importados quedan en memoria mientras la aplicación está abierta.
-- No se recopilan telemetrías remotas de las capturas.
-- **Excepción de red:** la interfaz puede descargar Leaflet y teselas OpenStreetMap si está conectada a Internet; el área visible del mapa puede ser conocida por ese servicio.
+Los archivos de entrada pueden incluir SSID, BSSID, direcciones Bluetooth, nombres publicitados, intensidad de señal, hora y coordenadas GPS. Los identificadores y coordenadas pueden estar vinculados a personas. No publiques capturas ni exportaciones reales sin revisar cuidadosamente su contenido.
 
-## Buenas prácticas
+**Bluetooth:** las direcciones BLE pueden ser aleatorias y rotar. Wardrive Track no atribuye una identidad persistente a un MAC ni identifica al titular de un dispositivo. El mapa describe dónde se observó una señal, nunca una localización precisa del emisor.
 
-Utiliza el programa exclusivamente con capturas obtenidas legalmente y con autorización. No subas al repositorio PCAP reales, listados BSSID, ubicaciones o datos personales. Revisa los GeoJSON y CSV antes de compartirlos.
+## Aislamiento y red
 
-No expongas el servidor mediante proxies públicos o túneles. Si usas datos sensibles, desactiva Internet para visualizar un plano esquemático local.
+- El servidor Python escucha únicamente en **127.0.0.1**.
+- Se valida la cabecera **Host** y los orígenes de solicitudes de escritura.
+- Las capturas permanecen en memoria de la aplicación, sin subida automática.
+- Cada archivo está limitado a **32 MiB**.
+- Los CSV exportados neutralizan prefijos que algunos programas de hojas de cálculo ejecutarían como fórmulas.
+- Los nombres SSID/BLE se insertan en la interfaz mediante **textContent** (no como HTML).
+- El modo mapa de calles requiere **Leaflet** desde un CDN y teselas de **OpenStreetMap**. Esas solicitudes externas pueden revelar la región del mapa consultada y direcciones IP. Para evitarlo, trabaja sin conexión y utiliza el mapa esquemático local.
 
-## Notificación responsable de vulnerabilidades
+## Precauciones
 
-Evita publicar detalles explotables o datos privados en incidencias públicas. Contacta de forma privada con el responsable del repositorio antes de divulgar una vulnerabilidad.
+Importa solo capturas autorizadas. Si vas a compartir GeoJSON, elimina primero coordenadas, fechas e identificadores no necesarios. No publiques tokens, contraseñas, sesiones ni capturas con contenido sensible en GitHub.
 
-## Alcance de esta versión
+No expongas el servidor mediante proxies, reenvío de puertos o túneles. Ejecuta siempre la versión del proyecto que corresponda a una revisión de confianza.
 
-Es una primera versión funcional, **no un producto auditado ni certificado**. Los archivos de captura son entradas no confiables: mantenlos dentro del tamaño admitido y usa fuentes verificadas.
+## Divulgación responsable
+
+Para informar de una vulnerabilidad, contacta con el responsable del repositorio de forma privada antes de publicar un informe explotable, una captura o información personal.
+
+Esta aplicación es un proyecto de software en desarrollo; no implica una auditoría formal de ciberseguridad o cumplimiento legal.
