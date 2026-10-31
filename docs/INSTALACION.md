@@ -165,3 +165,7 @@ Para desinstalar Wardrive Track basta con cerrar el programa y eliminar su carpe
 5. Cierra la aplicación con **Ctrl+C**.
 
 Para interpretar correctamente una captura o importar GPS real, consulta [USO.md](USO.md). Para errores habituales, consulta [SOLUCION_PROBLEMAS.md](SOLUCION_PROBLEMAS.md).
+
+## 9. Ejecutables independientes (opcional)
+
+Si prefieres utilizar la versión compilada sin instalar Python, consulta la guía [COMPILACION.md](COMPILACION.md), que explica cómo obtener los artifacts de Windows, macOS y Linux desde GitHub Actions o compilar con PyInstaller en tu propio equipo. Los binarios no están firmados digitalmente.
