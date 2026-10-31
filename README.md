@@ -1,34 +1,30 @@
 # Wardrive Track
 
+![Python · Windows macOS Linux](https://img.shields.io/badge/Python-3.10%2B-3977b8?logo=python&logoColor=white)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-0.2.0-17af90)
 ![Pruebas multiplataforma](https://github.com/frangonzas/Wardrive-Track/actions/workflows/tests.yml/badge.svg)
+![Licencia](https://img.shields.io/badge/licencia-pendiente-lightgrey)
 
-**Análisis local y visualización geográfica de capturas Wi-Fi y registros GPS.**
+**Explorador local de observaciones Wi-Fi, Bluetooth y BLE, orientado a los archivos guardados por ESP32 Marauder.**
 
-Proyecto multiplataforma desarrollado en **Python 3.10+**, con interfaz web local. Importa archivos **PCAP, PCAPNG, CSV, LOG y TXT**, identifica redes Wi-Fi, cruza observaciones con trazas GPS por fecha/hora, explora los resultados sobre un mapa y exporta a **CSV y GeoJSON**.
+Wardrive Track convierte capturas **PCAP/PCAPNG** y registros **WiGLE 1.6/CSV/LOG/TXT** en un inventario visual de redes y anuncios Bluetooth, con clasificación de seguridad Wi-Fi, filtrado combinado, mapa de puntos GPS y exportación a **CSV/GeoJSON**.
 
-**Versión:** 0.1.0 · **Sistemas:** Windows, macOS y Linux · **Dependencias Python:** ninguna · **Idioma de la documentación:** español
+**Windows · macOS · Linux · Python estándar (sin paquetes pip) · Interfaz en español · Datos procesados localmente.**
 
-> **Importante:** la ubicación representada corresponde al lugar donde se observó una señal Wi-Fi, **no necesariamente al emplazamiento físico del punto de acceso**. Un PCAP sin GPS no proporciona, por sí mismo, la posición geográfica de una red. La aplicación no inventa coordenadas ni consulta bases de datos de BSSID.
+> **Importante:** no determina la posición física de un router ni de un dispositivo Bluetooth a partir de su MAC. Los puntos del mapa representan **lugares de observación** documentados mediante GPS; si el archivo no proporciona coordenadas, no se inventan. Algunas direcciones BLE son aleatorias y cambian; una dirección no equivale a una identidad estable.
 
-## Instalación rápida (copiar y pegar)
+## Instalación rápida
 
-Requisitos: **Python 3.10 o posterior**, **Git** y un navegador moderno. No necesitas instalar paquetes con pip.
+Necesitas **Python 3.10 o superior**, **Git** y un navegador.
 
-### macOS (Terminal)
+### macOS
 
-~~~bash
-python3 --version
-git --version
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
-python3 run.py
-~~~
-
-### Linux (Terminal)
+Abre **Terminal** y copia:
 
 ~~~bash
 python3 --version
 git --version
+cd ~
 git clone https://github.com/frangonzas/Wardrive-Track.git
 cd Wardrive-Track
 python3 run.py
@@ -39,119 +35,150 @@ python3 run.py
 ~~~powershell
 py --version
 git --version
+cd $HOME
 git clone https://github.com/frangonzas/Wardrive-Track.git
 cd Wardrive-Track
 py -3 run.py
 ~~~
 
-Si Windows no reconoce **py**, prueba **python --version** y ejecuta **python run.py**. En macOS/Linux, si no reconoce **python3**, instala Python 3.10+ y repite los pasos.
+### Linux (Ubuntu / Debian)
 
-La aplicación inicia un servidor HTTP en **127.0.0.1**, asigna un puerto disponible y abre el navegador. Si no abre automáticamente, copia la dirección local que aparece en la terminal. **Para detenerla, pulsa Ctrl+C.**
+~~~bash
+sudo apt update
+sudo apt install -y python3 git
+cd ~
+git clone https://github.com/frangonzas/Wardrive-Track.git
+cd Wardrive-Track
+python3 run.py
+~~~
 
-**Guías completas:** [Instalación y actualización](docs/INSTALACION.md) · [Manual de uso](docs/USO.md) · [Solución de problemas](docs/SOLUCION_PROBLEMAS.md).
+El programa abre su panel web en una URL local del tipo **http://127.0.0.1:PUERTO**. Si no se abre el navegador, copia esa URL desde la terminal. Para detenerlo pulsa **Ctrl+C**.
 
-## Funciones
+**No se requieren dependencias de Python ni instalación mediante pip.** Los mapas de calles utilizan Leaflet y teselas de OpenStreetMap a través de Internet; en ausencia de conexión se habilita un plano esquemático.
+
+**Guías:** [Instalación paso a paso](docs/INSTALACION.md) · [Manual completo](docs/USO.md) · [Problemas frecuentes](docs/SOLUCION_PROBLEMAS.md).
+
+## Novedades de la versión 0.2
 
 | Módulo | Funcionalidad |
-| --- | --- |
-| Importación | PCAP, PCAPNG, registros GPS en LOG/TXT, JSON por línea y CSV, incluido WiGLE 1.6 |
-| Análisis | BSSID, SSID, RSSI cuando está disponible, canal, recuento de observaciones |
-| Geolocalización | Coordenadas explícitas y correlación con GPS por proximidad temporal (máximo 8 segundos) |
-| Mapa | Puntos de observación y recorrido GPS; plano esquemático alternativo sin Internet |
-| Exploración | Inventario de redes, búsqueda y filtros |
-| Exportación | CSV de redes y GeoJSON con puntos georreferenciados y recorrido |
-| Privacidad | Análisis local; no se suben archivos a un servidor externo |
+|---|---|
+| **Wi-Fi** | SSID/BSSID, RSSI, canal, recuento y seguridad anunciada: OPEN, WEP, WPA, WPA2, WPA2/WPA3, WPA3 y OWE |
+| **Bluetooth Low Energy (BLE)** | Direcciones MAC, nombres anunciados (si están presentes), RSSI, tipo de dirección HCI, GPS observado |
+| **Bluetooth clásico** | Inventario de entradas BT etiquetadas explícitamente en CSV/LOG; no analiza tramas BR/EDR |
+| **Filtros combinables** | Nombre o MAC, tecnología, protocolo de seguridad, presencia de GPS, rango de señal y ordenación |
+| **Cartografía** | Marcadores Wi-Fi y Bluetooth diferenciados, línea de recorrido GPS, plano local sin Internet |
+| **Exportaciones** | CSV y GeoJSON de la sesión completa o de los **resultados filtrados** |
+| **Compatibilidad** | PCAP/PCAPNG Wi-Fi 802.11/Radiotap; anuncios BLE desde HCI H4 linktypes 187 y 201; CSV WiGLE 1.6, LOG, TXT y NMEA RMC |
+| **Seguridad** | Servidor en 127.0.0.1, límite 32 MiB/archivo, CSV protegido ante fórmulas y ausencia de telemetría de capturas |
 
-## Primer uso en 3 pasos
+### Clasificación de seguridad Wi-Fi
 
-1. Ejecuta la aplicación y selecciona **Cargar demostración**. Los datos de ejemplo son inventados y sirven para verificar el funcionamiento.
-2. Para analizar tus datos, importa un PCAP/PCAPNG o un CSV/LOG/TXT compatible. Si las capturas no incluyen GPS, importa también un registro GPS con marcas de tiempo sincronizadas.
-3. Explora las redes detectadas y el mapa; exporta los resultados a **CSV** o **GeoJSON**.
+Para tramas beacon/probe-response se analizan los **Information Elements** anunciados por el punto de acceso: bit de privacidad, **WPA vendor IE** y **RSN IE con suites AKM**. Se reconoce la transición WPA2/WPA3 (PSK + SAE), WPA3-SAE y OWE. Para CSV/LOG se normaliza el campo **AuthMode/Security** proporcionado por el origen.
 
-Los ejemplos de la carpeta **examples/** son sintéticos. Para correlacionar una captura real con GPS, ambas fuentes deben compartir una referencia de tiempo consistente. Las fechas sin zona horaria se interpretan como UTC.
+Cuando no puede determinarse una categoría, se muestra **No determinada**. El cifrado anunciado **no es una prueba** de la seguridad efectiva de la red ni sustituye una auditoría.
 
-## Formatos admitidos
+### Bluetooth: qué significa realmente la información
 
-| Archivo | Alcance en v0.1.0 |
-| --- | --- |
-| **.pcap** | Tramas Wi-Fi 802.11 beacon / probe response, con enlace 802.11 o Radiotap compatible |
-| **.pcapng** | Capturas con SHB, IDB y EPB para interfaces Wi-Fi compatibles |
-| **.csv** | Columnas BSSID/MAC, SSID, RSSI, latitud, longitud, fecha/hora; WiGLE 1.6 |
-| **.log / .txt** | Líneas con pares clave/valor, JSON por línea y NMEA RMC |
+Para anuncios **BLE**, la aplicación extrae datos de advertising HCI que estén presentes en el archivo: dirección, nombre publicitado y RSSI. Para registros **BT** marcados explícitamente, muestra sus metadatos. En Bluetooth el campo «Seguridad Wi-Fi» aparece **No aplica**. No se infiere fabricante, propietario, ubicación física ni identidad de la persona portadora.
 
-Ejemplo de archivo LOG propio:
+## Tu primer análisis
+
+1. Ejecuta **python3 run.py** (o **py -3 run.py** en Windows).
+2. Selecciona **Cargar demostración completa**: contiene Wi-Fi, BLE, Bluetooth clásico y un recorrido GPS con datos sintéticos.
+3. En **Inventario de radio**, prueba los filtros de **Tecnología**, **Seguridad Wi-Fi**, **GPS**, **RSSI** y la búsqueda por nombre/MAC.
+4. Activa **Exportar solo resultados filtrados** si deseas guardar exactamente la selección del inventario. En caso contrario, CSV/GeoJSON incluyen toda la sesión.
+5. Importa tus capturas y registros autorizados desde **Importar capturas**; puedes seleccionar varios archivos a la vez.
+6. Exporta tus resultados antes de cerrar, porque la sesión se mantiene en memoria.
+
+El archivo **.pcap** no incluye necesariamente datos GPS. Para asociar capturas sin coordenadas con una ruta GPS, los relojes deben estar sincronizados: la aplicación asigna el punto GPS **más cercano dentro de 8 segundos**, sin triangular ni consultar servicios de geolocalización de direcciones.
+
+## Compatibilidad por formato
+
+| Formato | Redes Wi-Fi | BLE | Bluetooth clásico | GPS |
+|---|---|---|---|---|
+| PCAP / PCAPNG con 802.11 o Radiotap | Beacon/probe-response | — | — | Mediante otro archivo sincronizado |
+| PCAP / PCAPNG HCI H4 linktype 187/201 | — | LE Advertising Report | — | Mediante otro archivo sincronizado |
+| WiGLE 1.6 CSV con Type=WIFI/BLE/BT | Sí | Sí | Sí, si Type=BT | Sí, si existen coordenadas |
+| LOG/TXT estructurado y registros de Marauder compatibles | Sí | Sí | Sí, si va etiquetado | Sí |
+| NMEA RMC | — | — | — | Sí, ruta con posición/tiempo |
+
+Los PCAP genéricos de Ethernet, todos los tipos de paquetes Bluetooth y formatos propietarios desconocidos **no** están soportados. Los campos admitidos varían entre versiones, firmware y modelos ESP32 Marauder. Si no aparece un nombre, no se rellena artificialmente.
+
+Ejemplo de registro de texto admitido:
 
 ~~~text
 2026-10-29T12:00:00Z GPS lat=40.41680 lon=-3.70380
-2026-10-29T12:00:03Z BSSID=02:AA:BB:CC:DD:01 SSID="Laboratorio" RSSI=-48 channel=6
+2026-10-29T12:00:02Z BSSID=02:AA:BB:CC:DD:01 SSID="Laboratorio WiFi" RSSI=-48 channel=6 security=WPA2
+2026-10-29T12:00:03Z BLE MAC=D2:11:22:33:44:55 name="Sensor de pruebas" RSSI=-64
 ~~~
 
-## Comandos de mantenimiento
+Consulta [Formatos y datos de ESP32 Marauder](docs/MARAUDER.md) para información específica de sus funciones WiFi Wardrive, Bluetooth Wardrive y registros.
 
-**Ejecutar sin abrir el navegador:**
+## Operaciones y pruebas
+
+**Ejecutar sin abrir navegador:**
 
 ~~~bash
 python3 run.py --no-browser
 ~~~
 
-**Definir un puerto local (ejemplo 8765):**
+**Fijar el puerto:**
 
 ~~~bash
 python3 run.py --port 8765
 ~~~
 
-**Ejecutar las pruebas desde la raíz del repositorio:**
+**Pruebas automatizadas:**
 
 ~~~bash
 python3 -m unittest discover -s tests -v
 ~~~
 
-En Windows, sustituye **python3** por **py -3**. Para descargar actualizaciones del repositorio, desde la carpeta del proyecto ejecuta **git pull --ff-only**.
+**Actualizar desde GitHub** (en la carpeta de tu instalación):
 
-## Arquitectura
+~~~bash
+git pull --ff-only
+python3 run.py
+~~~
+
+En Windows sustituye **python3** por **py -3**. Se ejecutan pruebas de sintaxis y tests automáticos en **Windows, macOS y Linux** con Python 3.10 y 3.13 usando GitHub Actions.
+
+## Estructura
 
 ~~~text
 Wardrive-Track/
-├── run.py                     # Punto de entrada
-├── start_windows.bat          # Lanzador Windows
-├── start_macos_linux.sh       # Lanzador macOS/Linux
-├── requirements.txt           # Sin paquetes adicionales
+├── run.py                    # Arranque
 ├── wardrive_track/
-│   ├── __init__.py
-│   ├── core.py                # Modelo de sesión y cruce GPS
-│   ├── parsers.py             # Lectores y normalización
-│   └── server.py              # Servidor HTTP local / API
+│   ├── core.py               # Inventario y cruce temporal GPS
+│   ├── parsers.py            # WiGLE, NMEA, PCAP y PCAPNG
+│   ├── radio.py              # Clasificación WPA/WPA2/WPA3 y HCI BLE
+│   └── server.py             # Servidor/API HTTP local
 ├── web/
-│   ├── index.html             # Panel de control
-│   ├── style.css
-│   └── app.js
-├── examples/                  # Datos sintéticos
-├── tests/                     # Pruebas unitarias
-├── docs/
-│   ├── INSTALACION.md
-│   ├── USO.md
-│   └── SOLUCION_PROBLEMAS.md
+│   ├── index.html            # Consola de análisis
+│   ├── style.css             # Estilos responsivos
+│   └── app.js                # Mapa, filtros y exportaciones
+├── examples/                 # Datos de prueba sintéticos
+├── tests/                    # Suite automatizada
+├── docs/                     # Manuales en español
+├── .github/workflows/        # CI multiplataforma
 └── README.md
 ~~~
 
-## Límites y consideraciones
+## Privacidad, ética y límites
 
-- Máximo **32 MiB por archivo** y **60.000 registros por tipo y sesión**.
-- Los PCAP Ethernet no contienen por sí mismos las tramas de gestión Wi-Fi necesarias para identificar puntos de acceso.
-- RSSI no permite calcular una distancia exacta. La posición mostrada es una **observación georreferenciada**, no una triangulación.
-- La vista web limita el volumen de filas y puntos dibujados para mantener la fluidez; las exportaciones incluyen los datos procesados.
-- La información se conserva en memoria mientras se ejecuta el proceso; exporta antes de cerrar.
-- El mapa de calles utiliza **Leaflet** y teselas de **OpenStreetMap** en línea; sin Internet se usa un plano esquemático. Las peticiones de teselas pueden revelar al proveedor la zona visualizada.
-- No implementa captura activa, seguimiento de personas, consultas a bases de localización ni geolocalización de BSSID sin coordenadas observadas.
+- Analiza exclusivamente **capturas y registros que poseas y estés autorizado a usar**.
+- Las MAC, los nombres de dispositivos Bluetooth y las coordenadas pueden constituir información sensible. No publiques capturas reales sin anonimizar.
+- Las direcciones BLE aleatorias pueden rotar; el inventario muestra **identificadores observados**, no personas ni necesariamente dispositivos únicos persistentes.
+- Los resultados geográficos se refieren a **observaciones**. Una medición RSSI por sí sola no da distancia ni localización exacta.
+- Las capturas permanecen en memoria mientras dura la sesión y no se suben a nuestros servidores. **Leaflet y OpenStreetMap son servicios de visualización externos** cuando el mapa de calles está activo y pueden recibir peticiones de teselas de la región visualizada.
+- Hasta **32 MiB por archivo** y **60.000 registros por tipo de sesión** (observaciones / GPS). La tabla y el mapa limitan el volumen dibujado para mantener la fluidez.
+- No ofrece ataques, descifrado de contraseñas, captura activa, asociación automática de clientes ni búsqueda de personas.
+- Esta versión **no ha sido sometida a auditoría de seguridad independiente**.
 
-## Seguridad y uso responsable
+## Proyecto y contribuciones
 
-Utiliza capturas propias o con autorización. Los BSSID, nombres de redes y coordenadas pueden ser sensibles; **no publiques capturas o exportaciones reales** en el repositorio. El servidor está restringido al equipo local (**127.0.0.1**). Más detalles en [Política de seguridad](SECURITY.md).
+[Historial de cambios](CHANGELOG.md) · [Contribuir](CONTRIBUTING.md) · [Seguridad](SECURITY.md) · [Estado de las pruebas](https://github.com/frangonzas/Wardrive-Track/actions)
 
-## Desarrollo
+**Licencia:** aún no se ha publicado ninguna licencia explícita. Hasta que el propietario del repositorio añada una, se mantienen todos los derechos reservados. La disponibilidad pública del código no implica permiso automático para redistribuirlo.
 
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para ejecutar pruebas y proponer cambios, y [CHANGELOG.md](CHANGELOG.md) para conocer el historial de versiones. Proyecto en fase **v0.1.0**; **no se ha concedido todavía una licencia de reutilización**. Hasta que el titular añada una licencia explícita, se aplican los derechos de autor habituales.
-
----
-
-**Wardrive Track** · [Repositorio oficial](https://github.com/frangonzas/Wardrive-Track) · Proyecto de análisis offline-first y cartografía de observaciones Wi-Fi.
+**Proyecto independiente**: Wardrive Track es un lector de archivos, no firmware ESP32 Marauder ni una afiliación oficial con sus desarrolladores.
