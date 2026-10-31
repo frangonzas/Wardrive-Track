@@ -1,2 +1,2 @@
-"""Wardrive Track: explorador de observaciones Wi-Fi con GPS."""
-__version__ = "0.1.0"
+"""Wardrive Track: análisis local Wi-Fi y Bluetooth/BLE de capturas."""
+__version__ = "0.2.0"
