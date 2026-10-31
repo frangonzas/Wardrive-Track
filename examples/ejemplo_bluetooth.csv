@@ -1,0 +1,6 @@
+WigleWifi-1.6,appRelease=WardriveTrack0.2,model=MarauderDemo,release=demo
+MAC,SSID,AuthMode,FirstSeen,Channel,Frequency,RSSI,CurrentLatitude,CurrentLongitude,AltitudeMeters,AccuracyMeters,RCOIs,MfgrId,Type
+D2:11:22:AA:11:01,Sensor de laboratorio,,2026-10-29 12:00:04,,, -55,40.41710,-3.70310,650,6,,,BLE
+D2:11:22:AA:11:02,Beacon de pruebas,,2026-10-29 12:00:08,,,-68,40.41730,-3.70240,650,6,,,BLE
+D2:11:22:AA:11:03,Auriculares DEMO,,2026-10-29 13:00:00,,,-74,,,,,,BLE
+B2:33:44:CC:22:01,Altavoz laboratorio,,2026-10-29 12:00:12,,,-60,40.41760,-3.70210,650,5,,,BT
