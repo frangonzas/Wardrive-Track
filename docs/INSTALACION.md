@@ -1,4 +1,9 @@
-# Instalación, verificación y actualización
+# Instalación y verificación — Wardrive Track 0.3.0
+
+**Creador: Fran Gonzas · Versión actual: v0.3.0.**
+
+> Si ves la versión anterior, consulta [ACTUALIZACION.md](ACTUALIZACION.md). Antes de iniciar verifica la instalación con --version y --diagnostico.
+
 
 Esta guía contiene comandos **listos para copiar y pegar**, separados por plataforma.
 

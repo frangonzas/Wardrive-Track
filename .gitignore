@@ -17,3 +17,8 @@ Thumbs.db
 *.sqlite*
 *.db
 !examples/captura_ejemplo.pcap
+
+# Archivos temporales creados por PyInstaller
+dist/
+build/
+*.spec

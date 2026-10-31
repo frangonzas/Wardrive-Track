@@ -1,197 +1,149 @@
-# Wardrive Track
+# Wardrive Track — Versión 0.3.0
 
-![Python · Windows macOS Linux](https://img.shields.io/badge/Python-3.10%2B-3977b8?logo=python&logoColor=white)
-![Versión](https://img.shields.io/badge/versi%C3%B3n-0.2.0-17af90)
-![Pruebas multiplataforma](https://github.com/frangonzas/Wardrive-Track/actions/workflows/tests.yml/badge.svg)
-![Licencia](https://img.shields.io/badge/licencia-pendiente-lightgrey)
+![Versión actual](https://img.shields.io/badge/%C3%9ALTIMA%20VERSI%C3%93N-v0.3.0-13b99d?style=for-the-badge)
+![Creador](https://img.shields.io/badge/CREADOR-Fran%20Gonzas-244664?style=for-the-badge)
+![Pruebas](https://github.com/frangonzas/Wardrive-Track/actions/workflows/tests.yml/badge.svg)
+![Ejecutables](https://github.com/frangonzas/Wardrive-Track/actions/workflows/build.yml/badge.svg)
 
-**Explorador local de observaciones Wi-Fi, Bluetooth y BLE, orientado a los archivos guardados por ESP32 Marauder.**
+**Versión oficial actual: v0.3.0 — 31 de octubre de 2026**  
+**Creador: Fran Gonzas · [@frangonzas](https://github.com/frangonzas)**
 
-Wardrive Track convierte capturas **PCAP/PCAPNG** y registros **WiGLE 1.6/CSV/LOG/TXT** en un inventario visual de redes y anuncios Bluetooth, con clasificación de seguridad Wi-Fi, filtrado combinado, mapa de puntos GPS y exportación a **CSV/GeoJSON**.
+Análisis visual y local de capturas **Wi-Fi, Bluetooth y BLE**, incluyendo formatos compatibles con **ESP32 Marauder**, PCAP, PCAPNG y registros CSV/LOG/TXT con GPS. Compatible con **Windows, macOS y Linux**. Interfaz y documentación en español.
 
-**Windows · macOS · Linux · Python estándar (sin paquetes pip) · Interfaz en español · Datos procesados localmente.**
+> **ATENCIÓN SI SE ABRE UNA VERSIÓN ANTIGUA:** esta edición se distingue por mostrar **v0.3.0 · Fran Gonzas** en la pantalla y por generar ejecutables cuyo nombre lleva obligatoriamente **v0.3.0**. Los binarios antiguos con nombre genérico no se actualizan al ejecutar Git. Lee [Cómo actualizar sin confusiones](docs/ACTUALIZACION.md).
 
-> **Importante:** no determina la posición física de un router ni de un dispositivo Bluetooth a partir de su MAC. Los puntos del mapa representan **lugares de observación** documentados mediante GPS; si el archivo no proporciona coordenadas, no se inventan. Algunas direcciones BLE son aleatorias y cambian; una dirección no equivale a una identidad estable.
+## Instalación limpia recomendada
 
-## Instalación rápida
+Necesitas **Python 3.10+**, Git y un navegador. No hay dependencias adicionales de Python para ejecutar el código. Utilizamos una carpeta nueva para no arrancar accidentalmente una copia anterior.
 
-Necesitas **Python 3.10 o superior**, **Git** y un navegador.
-
-### macOS
-
-Abre **Terminal** y copia:
+### macOS — Terminal
 
 ~~~bash
-python3 --version
-git --version
 cd ~
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
+python3 run.py --version
+python3 run.py --diagnostico
 python3 run.py
 ~~~
 
-### Windows (PowerShell)
+### Windows — PowerShell
 
 ~~~powershell
-py --version
-git --version
 cd $HOME
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
+py -3 run.py --version
+py -3 run.py --diagnostico
 py -3 run.py
 ~~~
 
-### Linux (Ubuntu / Debian)
+### Linux — Ubuntu/Debian
 
 ~~~bash
 sudo apt update
 sudo apt install -y python3 git
 cd ~
-git clone https://github.com/frangonzas/Wardrive-Track.git
-cd Wardrive-Track
+git clone https://github.com/frangonzas/Wardrive-Track.git Wardrive-Track-v0.3.0
+cd Wardrive-Track-v0.3.0
+python3 run.py --version
+python3 run.py --diagnostico
 python3 run.py
 ~~~
 
-El programa abre su panel web en una URL local del tipo **http://127.0.0.1:PUERTO**. Si no se abre el navegador, copia esa URL desde la terminal. Para detenerlo pulsa **Ctrl+C**.
+La primera comprobación debe imprimir **Wardrive Track v0.3.0 | Creador: Fran Gonzas**. El diagnóstico comprueba que la interfaz y los ejemplos están presentes. La aplicación imprime una URL local que incluye **?v=0.3.0** y abre esa versión en el navegador. Finaliza con **Ctrl+C**.
 
-**No se requieren dependencias de Python ni instalación mediante pip.** Los mapas de calles utilizan Leaflet y teselas de OpenStreetMap a través de Internet; en ausencia de conexión se habilita un plano esquemático.
+[Guía completa de instalación](docs/INSTALACION.md) · [Última versión y verificación](docs/ULTIMA_VERSION.md)
 
-**Guías:** [Instalación paso a paso](docs/INSTALACION.md) · [Manual completo](docs/USO.md) · [Problemas frecuentes](docs/SOLUCION_PROBLEMAS.md) · [Compilación y ejecutables](docs/COMPILACION.md).
+## Ejecutables autónomos por sistema operativo
 
-## Novedades de la versión 0.2
+También están disponibles compilaciones que no necesitan Python. Para evitar ambigüedades, el archivo incluye versión y sistema:
 
-| Módulo | Funcionalidad |
-|---|---|
-| **Wi-Fi** | SSID/BSSID, RSSI, canal, recuento y seguridad anunciada: OPEN, WEP, WPA, WPA2, WPA2/WPA3, WPA3 y OWE |
-| **Bluetooth Low Energy (BLE)** | Direcciones MAC, nombres anunciados (si están presentes), RSSI, tipo de dirección HCI, GPS observado |
-| **Bluetooth clásico** | Inventario de entradas BT etiquetadas explícitamente en CSV/LOG; no analiza tramas BR/EDR |
-| **Filtros combinables** | Nombre o MAC, tecnología, protocolo de seguridad, presencia de GPS, rango de señal y ordenación |
-| **Cartografía** | Marcadores Wi-Fi y Bluetooth diferenciados, línea de recorrido GPS, plano local sin Internet |
-| **Exportaciones** | CSV y GeoJSON de la sesión completa o de los **resultados filtrados** |
-| **Compatibilidad** | PCAP/PCAPNG Wi-Fi 802.11/Radiotap; anuncios BLE desde HCI H4 linktypes 187 y 201; CSV WiGLE 1.6, LOG, TXT y NMEA RMC |
-| **Seguridad** | Servidor en 127.0.0.1, límite 32 MiB/archivo, CSV protegido ante fórmulas y ausencia de telemetría de capturas |
+| Sistema | Archivo ejecutable |
+| --- | --- |
+| Windows | **Wardrive-Track-v0.3.0-Windows.exe** |
+| macOS | **Wardrive-Track-v0.3.0-macOS** |
+| Linux | **Wardrive-Track-v0.3.0-Linux** |
 
-### Clasificación de seguridad Wi-Fi
+**[Descargar compilaciones comprobadas de v0.3.0](https://github.com/frangonzas/Wardrive-Track/actions/runs/41188218392)**: abre la ejecución, busca **Artifacts** y descarga el paquete de tu sistema. Los artifacts pueden requerir iniciar sesión en GitHub y tienen retención limitada.
 
-Para tramas beacon/probe-response se analizan los **Information Elements** anunciados por el punto de acceso: bit de privacidad, **WPA vendor IE** y **RSN IE con suites AKM**. Se reconoce la transición WPA2/WPA3 (PSK + SAE), WPA3-SAE y OWE. Para CSV/LOG se normaliza el campo **AuthMode/Security** proporcionado por el origen.
+**No elijas** los paquetes antiguos denominados simplemente Wardrive-Track-Windows, Wardrive-Track-macOS o Wardrive-Track-Linux. No corresponden a la nueva nomenclatura versionada.
 
-Cuando no puede determinarse una categoría, se muestra **No determinada**. El cifrado anunciado **no es una prueba** de la seguridad efectiva de la red ni sustituye una auditoría.
+[Guía de descarga y compilación local](docs/COMPILACION.md)
 
-### Bluetooth: qué significa realmente la información
+## Funcionalidades
 
-Para anuncios **BLE**, la aplicación extrae datos de advertising HCI que estén presentes en el archivo: dirección, nombre publicitado y RSSI. Para registros **BT** marcados explícitamente, muestra sus metadatos. En Bluetooth el campo «Seguridad Wi-Fi» aparece **No aplica**. No se infiere fabricante, propietario, ubicación física ni identidad de la persona portadora.
+| Módulo | Funciones |
+| --- | --- |
+| Wi-Fi | SSID, BSSID, canal, RSSI, fechas y número de observaciones |
+| Seguridad Wi-Fi | OPEN, WEP, WPA, WPA2, WPA2/WPA3, WPA3, OWE y No determinada |
+| Bluetooth / BLE | Nombre publicitado cuando existe, dirección, RSSI y tecnología |
+| GPS | Puntos explícitos y correlación temporal con un margen máximo de 8 segundos |
+| Importación | PCAP, PCAPNG, WiGLE CSV 1.6, LOG, TXT y NMEA RMC |
+| Filtros | Nombre, dirección MAC, protocolo, seguridad, señal y presencia de GPS |
+| Cartografía | Marcadores Wi-Fi/Bluetooth diferenciados, recorrido y plano esquemático |
+| Exportación | CSV y GeoJSON de toda la sesión o de las selecciones filtradas |
+| Privacidad | Análisis local; no se envían las capturas a nuestros servidores |
 
-## Tu primer análisis
+**El mapa señala el lugar de observación**, no la posición física del router o del dispositivo Bluetooth. No se infieren posiciones a partir de una MAC; las direcciones BLE pueden rotar y no representan necesariamente una identidad permanente. No se realizan ataques ni captura activa de radio.
 
-1. Ejecuta **python3 run.py** (o **py -3 run.py** en Windows).
-2. Selecciona **Cargar demostración completa**: contiene Wi-Fi, BLE, Bluetooth clásico y un recorrido GPS con datos sintéticos.
-3. En **Inventario de radio**, prueba los filtros de **Tecnología**, **Seguridad Wi-Fi**, **GPS**, **RSSI** y la búsqueda por nombre/MAC.
-4. Activa **Exportar solo resultados filtrados** si deseas guardar exactamente la selección del inventario. En caso contrario, CSV/GeoJSON incluyen toda la sesión.
-5. Importa tus capturas y registros autorizados desde **Importar capturas**; puedes seleccionar varios archivos a la vez.
-6. Exporta tus resultados antes de cerrar, porque la sesión se mantiene en memoria.
+## Primer uso y pruebas
 
-El archivo **.pcap** no incluye necesariamente datos GPS. Para asociar capturas sin coordenadas con una ruta GPS, los relojes deben estar sincronizados: la aplicación asigna el punto GPS **más cercano dentro de 8 segundos**, sin triangular ni consultar servicios de geolocalización de direcciones.
+1. Comprueba la versión en la terminal y en el encabezado de la web: **0.3.0 · Fran Gonzas**.
+2. Pulsa **Cargar demostración completa** para explorar los cinco archivos sintéticos Wi-Fi, BLE/BT y GPS.
+3. Filtra por tecnología y seguridad (WEP/WPA/WPA2/WPA3), busca por nombre y observa el mapa.
+4. Importa tus capturas autorizadas y exporta CSV o GeoJSON antes de cerrar. La sesión vive en memoria.
 
-## Compatibilidad por formato
-
-| Formato | Redes Wi-Fi | BLE | Bluetooth clásico | GPS |
-|---|---|---|---|---|
-| PCAP / PCAPNG con 802.11 o Radiotap | Beacon/probe-response | — | — | Mediante otro archivo sincronizado |
-| PCAP / PCAPNG HCI H4 linktype 187/201 | — | LE Advertising Report | — | Mediante otro archivo sincronizado |
-| WiGLE 1.6 CSV con Type=WIFI/BLE/BT | Sí | Sí | Sí, si Type=BT | Sí, si existen coordenadas |
-| LOG/TXT estructurado y registros de Marauder compatibles | Sí | Sí | Sí, si va etiquetado | Sí |
-| NMEA RMC | — | — | — | Sí, ruta con posición/tiempo |
-
-Los PCAP genéricos de Ethernet, todos los tipos de paquetes Bluetooth y formatos propietarios desconocidos **no** están soportados. Los campos admitidos varían entre versiones, firmware y modelos ESP32 Marauder. Si no aparece un nombre, no se rellena artificialmente.
-
-Ejemplo de registro de texto admitido:
-
-~~~text
-2026-10-29T12:00:00Z GPS lat=40.41680 lon=-3.70380
-2026-10-29T12:00:02Z BSSID=02:AA:BB:CC:DD:01 SSID="Laboratorio WiFi" RSSI=-48 channel=6 security=WPA2
-2026-10-29T12:00:03Z BLE MAC=D2:11:22:33:44:55 name="Sensor de pruebas" RSSI=-64
-~~~
-
-Consulta [Formatos y datos de ESP32 Marauder](docs/MARAUDER.md) para información específica de sus funciones WiFi Wardrive, Bluetooth Wardrive y registros.
-
-## Ejecutables independientes para Windows, macOS y Linux
-
-Además de ejecutar el código con Python, puedes descargar los **binarios producidos por GitHub Actions** desde [Compilar ejecutables multiplataforma](https://github.com/frangonzas/Wardrive-Track/actions/workflows/build.yml). Una ejecución terminada correctamente publica tres *artifacts* (Windows, macOS y Linux) durante 30 días.
-
-Para compilar localmente, instala PyInstaller solo como **dependencia de construcción**, no de ejecución:
-
-~~~bash
-python3 -m pip install --upgrade pyinstaller
-python3 build.py
-~~~
-
-En Windows usa **py -3**. Consulta [COMPILACION.md](docs/COMPILACION.md) para comandos precisos, descarga de los ZIP y advertencias sobre firma digital y arquitecturas.
-
-## Operaciones y pruebas
-
-**Ejecutar sin abrir navegador:**
-
-~~~bash
-python3 run.py --no-browser
-~~~
-
-**Fijar el puerto:**
-
-~~~bash
-python3 run.py --port 8765
-~~~
-
-**Pruebas automatizadas:**
+**Pruebas automatizadas — macOS/Linux:**
 
 ~~~bash
 python3 -m unittest discover -s tests -v
 ~~~
 
-**Actualizar desde GitHub** (en la carpeta de tu instalación):
+**Windows:**
 
-~~~bash
-git pull --ff-only
-python3 run.py
+~~~powershell
+py -3 -m unittest discover -s tests -v
 ~~~
 
-En Windows sustituye **python3** por **py -3**. Se ejecutan pruebas de sintaxis y tests automáticos en **Windows, macOS y Linux** con Python 3.10 y 3.13 usando GitHub Actions.
-
-## Estructura
+## Arquitectura del repositorio
 
 ~~~text
 Wardrive-Track/
-├── run.py                    # Arranque
+├── README.md                 # Portada: última versión
+├── CHANGELOG.md              # Histórico de versiones
+├── run.py                    # Ejecutar desde Python
+├── build.py                  # Compilar ejecutables con versión en el nombre
 ├── wardrive_track/
-│   ├── core.py               # Inventario y cruce temporal GPS
-│   ├── parsers.py            # WiGLE, NMEA, PCAP y PCAPNG
-│   ├── radio.py              # Clasificación WPA/WPA2/WPA3 y HCI BLE
-│   └── server.py             # Servidor/API HTTP local
-├── web/
-│   ├── index.html            # Consola de análisis
-│   ├── style.css             # Estilos responsivos
-│   └── app.js                # Mapa, filtros y exportaciones
-├── examples/                 # Datos de prueba sintéticos
+│   ├── __init__.py           # FUENTE ÚNICA: versión, creador y metadatos
+│   ├── server.py             # API /api/about y recursos empaquetados
+│   ├── core.py               # Inventario y coordenadas GPS
+│   ├── parsers.py            # PCAP, PCAPNG, CSV, LOG, TXT, NMEA
+│   └── radio.py              # WPA/RSN y anuncios BLE
+├── web/                      # Interfaz HTML, CSS y JavaScript
+├── examples/                 # Capturas de demostración sintéticas
 ├── tests/                    # Suite automatizada
-├── docs/                     # Manuales en español
-├── .github/workflows/        # CI multiplataforma
-└── README.md
+├── scripts/verify_build.py   # Prueba el ejecutable REAL y el HTML
+├── docs/                     # Manuales íntegramente en español
+└── .github/workflows/        # Tests y compilaciones Windows/macOS/Linux
 ~~~
 
-## Privacidad, ética y límites
+**Prevención de versiones antiguas:** tanto el ejecutable como la API, el diagnóstico y la web obtienen el número de versión de la misma fuente del código Python. El flujo de compilación verifica el binario real, que el HTML corresponde a v0.3.0 y que la demostración BLE funciona antes de publicar el paquete.
 
-- Analiza exclusivamente **capturas y registros que poseas y estés autorizado a usar**.
-- Las MAC, los nombres de dispositivos Bluetooth y las coordenadas pueden constituir información sensible. No publiques capturas reales sin anonimizar.
-- Las direcciones BLE aleatorias pueden rotar; el inventario muestra **identificadores observados**, no personas ni necesariamente dispositivos únicos persistentes.
-- Los resultados geográficos se refieren a **observaciones**. Una medición RSSI por sí sola no da distancia ni localización exacta.
-- Las capturas permanecen en memoria mientras dura la sesión y no se suben a nuestros servidores. **Leaflet y OpenStreetMap son servicios de visualización externos** cuando el mapa de calles está activo y pueden recibir peticiones de teselas de la región visualizada.
-- Hasta **32 MiB por archivo** y **60.000 registros por tipo de sesión** (observaciones / GPS). La tabla y el mapa limitan el volumen dibujado para mantener la fluidez.
-- No ofrece ataques, descifrado de contraseñas, captura activa, asociación automática de clientes ni búsqueda de personas.
-- Esta versión **no ha sido sometida a auditoría de seguridad independiente**.
+## Documentación profesional
 
-## Proyecto y contribuciones
+- [Instalación paso a paso](docs/INSTALACION.md)
+- [Actualizar desde v0.1 o v0.2](docs/ACTUALIZACION.md)
+- [Cómo verificar la última versión](docs/ULTIMA_VERSION.md)
+- [Descargar o crear ejecutables](docs/COMPILACION.md)
+- [Manual de uso y filtros](docs/USO.md)
+- [Compatibilidad ESP32 Marauder](docs/MARAUDER.md)
+- [Solución de problemas](docs/SOLUCION_PROBLEMAS.md)
+- [Historial de versiones](CHANGELOG.md)
+- [Privacidad y seguridad](SECURITY.md)
 
-[Historial de cambios](CHANGELOG.md) · [Contribuir](CONTRIBUTING.md) · [Seguridad](SECURITY.md) · [Estado de las pruebas](https://github.com/frangonzas/Wardrive-Track/actions)
+**Seguridad:** solo capturas propias o autorizadas. Las direcciones y las coordenadas pueden ser sensibles. El mapa de calles utiliza recursos externos de Leaflet y OpenStreetMap cuando hay conexión; el plano esquemático no los necesita. No existe licencia abierta publicada, por lo que la reutilización queda sujeta a los derechos del titular.
 
-**Licencia:** aún no se ha publicado ninguna licencia explícita. Hasta que el propietario del repositorio añada una, se mantienen todos los derechos reservados. La disponibilidad pública del código no implica permiso automático para redistribuirlo.
+---
 
-**Proyecto independiente**: Wardrive Track es un lector de archivos, no firmware ESP32 Marauder ni una afiliación oficial con sus desarrolladores.
+**Wardrive Track v0.3.0 · © 2026 Fran Gonzas** · Proyecto independiente: no es software oficial de ESP32 Marauder.

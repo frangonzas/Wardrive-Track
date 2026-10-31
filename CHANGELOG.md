@@ -1,5 +1,14 @@
 # Registro de cambios
 
+## 0.3.0 — 2026-10-31 · Fran Gonzas
+
+- Identidad única de versión/creador en código, API, CLI, interfaz y ejecutables.
+- Comandos --version y --diagnostico para diferenciar instalaciones antiguas.
+- Ejecutables versionados para Windows, macOS y Linux.
+- GitHub Actions verifica el ejecutable real, la interfaz y los recursos incluidos.
+- Portada y manuales reorganizados en español; nueva guía de actualización.
+- Corrección del empaquetado de recursos PyInstaller y navegación con identificador de versión.
+
 ## 0.2.0 — 2026-10-31
 
 **Evolución Wi-Fi + Bluetooth/BLE con enfoque ESP32 Marauder.**

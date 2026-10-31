@@ -27,3 +27,7 @@ En Windows sustituye **python3** por **py -3**. No se necesitan dependencias ext
 Abre una incidencia describiendo el comportamiento esperado, reproduce el problema con datos sintéticos y envía un pull request con resumen, pruebas y cambios documentales. No incluyas secretos ni información sensible en issues o commits.
 
 La licencia del código aún no está definida por el titular: antes de reutilizarlo o redistribuirlo, solicita autorización o espera a que se publique una licencia explícita.
+
+## Versión y responsable
+
+Creador del proyecto: **Fran Gonzas**. El número oficial de versión debe modificarse solamente en **wardrive_track/__init__.py**; las compilaciones, la API y el HTML leen la identidad desde ese archivo. Toda actualización debe comprobar también el ejecutable empaquetado.
