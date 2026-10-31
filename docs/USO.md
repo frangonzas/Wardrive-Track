@@ -1,62 +1,82 @@
-# Manual de usuario
+# Manual de usuario — Wardrive Track 0.2
 
-## Objetivo
+## 1. Abrir la aplicación
 
-Wardrive Track procesa **archivos previamente capturados** y permite explorar redes Wi-Fi observadas, asociadas con coordenadas proporcionadas por una fuente GPS. **No captura tráfico por sí mismo** y **no consulta ninguna base de geolocalización de routers**.
+Instala Python 3.10+ y Git, clona el repositorio y ejecútalo con **python3 run.py** en macOS/Linux o **py -3 run.py** en Windows. El navegador abre un servidor local (127.0.0.1) creado por la aplicación.
 
-## Flujo recomendado
+Para una instalación completa, consulta [INSTALACION.md](INSTALACION.md).
 
-1. Inicia el programa con **python3 run.py** (o **py -3 run.py** en Windows).
-2. Pulsa **Cargar demostración** y familiarízate con el panel.
-3. Selecciona **Importar archivos** o arrastra archivos al recuadro de importación.
-4. Importa primero tu captura **.pcap/.pcapng** y después el archivo **.log/.txt/.csv** con GPS. El orden no es obligatorio; el motor recalcula los cruces.
-5. Consulta las tarjetas de métricas, el mapa y el inventario de redes.
-6. Utiliza el buscador y los filtros para localizar BSSID/SSID.
-7. Exporta los resultados antes de cerrar el programa.
+## 2. Cargar datos
 
-## Cómo relaciona Wi-Fi y GPS
+En el menú lateral, pulsa **Importar capturas** o arrastra uno o varios archivos al área indicada:
 
-Una captura 802.11 puede incluir SSID, BSSID y fecha/hora. Los registros GPS pueden incluir latitud, longitud y fecha/hora. El programa asocia una observación Wi-Fi con el punto GPS de tiempo más cercano si la diferencia es **igual o inferior a 8 segundos**. No interpola posiciones ni infiere coordenadas a partir del BSSID.
+- **.pcap/.pcapng:** beacons/probe-response Wi-Fi (linktype 105 o Radiotap 127), anuncios BLE HCI H4 (linktype 187/201).
+- **.csv:** WiGLE 1.6 o CSV estructurado con cabeceras reconocibles (MAC, SSID, RSSI, AuthMode, CurrentLatitude, CurrentLongitude, Type).
+- **.log/.txt:** registros estructurados con pares clave=valor, JSON por línea o sentencias NMEA RMC.
 
-**Ejemplo de un archivo de registro de texto compatible:**
+La importación agrega registros a la sesión y recalcula el inventario. **Cargar demostración completa** sustituye la sesión actual por cinco archivos sintéticos; **Vaciar sesión** borra la memoria.
 
-~~~text
-2026-10-29T12:00:00Z GPS lat=40.41680 lon=-3.70380
-2026-10-29T12:00:03Z BSSID=02:AA:BB:CC:DD:01 SSID="Mi_Lab" RSSI=-48 channel=6
-~~~
+Cada importación devuelve un resumen y advertencias de formatos no reconocidos. No significa que todos los PCAP contengan tramas útiles.
 
-Las marcas de tiempo sin zona horaria se interpretan como **UTC**, no como hora local.
+## 3. Leer los indicadores
 
-## Interpretación de los resultados
+- **Total identificadores:** número de combinaciones distintas de tecnología + dirección MAC observada.
+- **Redes Wi-Fi:** identificadores BSSID de AP detectados.
+- **BLE / Bluetooth:** identificadores anunciados por esas tecnologías; un mismo dispositivo puede usar direcciones cambiantes.
+- **Con geolocalización:** registros del inventario con al menos una observación GPS.
+- **Observaciones:** número de registros importados, incluidos repetidos.
+- **Puntos GPS:** posiciones explícitas de los registros importados.
+- **Archivos:** fuentes importadas en la sesión.
 
-- **Redes detectadas:** BSSID únicos procesados.
-- **Redes con GPS:** redes con alguna observación asociada a coordenadas.
-- **Observaciones:** apariciones procesadas en los archivos.
-- **Puntos de ruta:** coordenadas GPS extraídas.
-- **Marcadores del mapa:** lugar desde el que se observó una señal; no la localización garantizada del router.
-- **Recorrido GPS:** secuencia de puntos importados.
-- **RSSI:** nivel de señal recibido; no debe interpretarse como distancia exacta.
+## 4. Seguridad y clasificación Wi-Fi
 
-Cuando un BSSID tiene varias observaciones georreferenciadas, se muestra la correspondiente a la señal más fuerte (si existe RSSI).
+La gráfica resume los recuentos de seguridad en redes Wi-Fi. Cada red tiene una clasificación **OPEN**, **WEP**, **WPA**, **WPA2**, **WPA2/WPA3**, **WPA3**, **OWE** o **No determinada**, cuando los beacons o CSV contienen información suficiente. No es un test de vulnerabilidad.
 
-## Exportaciones
+Bluetooth no utiliza WPA/WPA2/WPA3; sus filas muestran un guion en esa columna. El filtro de seguridad limita la vista a redes Wi-Fi que coincidan.
 
-**CSV:** inventario de redes, con columnas BSSID, SSID, RSSI, canal, seguridad anunciada, número de observaciones, coordenadas de observación y fecha de última detección. Incluye redes sin GPS.
+Consulta [MARAUDER.md](MARAUDER.md) para más detalles sobre formatos y cómo se obtiene la etiqueta de seguridad.
 
-**GeoJSON:** entidades Point para redes georreferenciadas y LineString para el recorrido GPS si existen al menos dos puntos. Las redes sin coordenadas no aparecen como puntos ficticios.
+## 5. Filtros combinados del explorador
 
-## Archivos compatibles
+Debajo del mapa, el bloque **Inventario de radio** incluye seis controles:
 
-- **PCAP/PCAPNG:** tramas beacon o probe response 802.11 en interfaces compatibles. Los PCAP Ethernet normales no son equivalentes a capturas Wi-Fi en modo monitor.
-- **LOG/TXT:** registros por línea con campos clave/valor, JSON y sentencias NMEA RMC.
-- **CSV:** cabeceras reconocibles de BSSID, MAC, SSID, RSSI, latitud y longitud; compatible con WiGLE 1.6.
+| Filtro | Qué hace |
+|---|---|
+| **Buscar nombre / MAC** | Busca texto en SSID, nombre Bluetooth, MAC y protocolo |
+| **Tecnología** | Todas / Wi-Fi / BLE / Bluetooth clásico |
+| **Seguridad Wi-Fi** | Todos / OPEN / WEP / WPA / WPA2 / WPA2-WPA3 mixto / WPA3 / OWE / No determinada |
+| **GPS** | Todos / Con GPS / Sin GPS |
+| **Señal (dBm)** | Todos / fuerte (≥ −60) / media (−80 a −61) / débil (< −80) / no disponible |
+| **Ordenar** | Mayor señal / nombre A–Z / cantidad de observaciones / más reciente |
 
-## Datos de prueba
+Los filtros se combinan y se reflejan en la **tabla y en los marcadores Wi-Fi/Bluetooth del mapa**. La ruta GPS de la sesión continúa visible para situar las observaciones. El botón **Restablecer filtros** devuelve los valores predeterminados.
 
-La carpeta **examples/** contiene un PCAP, un log GPS y un CSV WiGLE **sintéticos**. La opción **Cargar demostración** carga automáticamente estos archivos y reemplaza la sesión actual.
+Para mantener fluida la interfaz, la tabla muestra hasta 1.500 registros y el mapa hasta 4.500 marcadores, aunque el inventario completo queda disponible para exportar.
 
-## Privacidad y límites
+## 6. Coordenadas y límites de localización
 
-La información importada permanece en la memoria del proceso local, no se guarda automáticamente. Cada archivo admite **hasta 32 MiB** y hay un límite de **60.000 registros por tipo** en la sesión. El mapa de calles depende de recursos externos (Leaflet/OpenStreetMap); si necesitas evitar sus solicitudes, trabaja sin conexión con el plano esquemático.
+Un marcador significa **punto donde la antena detectó la señal**. No determina dónde está el punto de acceso ni dónde se encuentra el dispositivo.
 
-Utiliza únicamente archivos obtenidos con permiso y evita compartir capturas o ubicaciones identificables.
+Si el registro contiene latitud/longitud, se respeta esa observación. Si no, se puede relacionar con un punto GPS importado **dentro de 8 segundos de la misma marca temporal**. Si no hay coincidencia, se mantiene **Sin GPS**.
+
+Los relojes de PCAP y del GPS deben estar alineados. Las marcas de tiempo sin zona horaria se interpretan como UTC. El recorrido GPS se representa mediante la secuencia de los puntos con coordenadas.
+
+El mapa de calles puede solicitar teselas de OpenStreetMap y recursos de Leaflet; si falla su carga o no hay conexión, el programa utiliza un **plano esquemático** sin fondo cartográfico.
+
+## 7. Exportar
+
+Selecciona **CSV** para inventario de redes o **GeoJSON** para puntos y trazado GPS.
+
+- **Sin marcar «Exportar solo resultados filtrados»**: exporta toda la sesión procesada.
+- **Con la casilla marcada**: exporta el inventario visible tras aplicar los filtros; en GeoJSON se mantiene la ruta GPS completa y solo se incluyen puntos de emisores que superan los filtros.
+- CSV incluye registros sin GPS. GeoJSON solo incluye puntos con coordenadas válidas.
+
+Las exportaciones CSV neutralizan posibles valores interpretados como fórmulas por hojas de cálculo.
+
+## 8. Guardar y cerrar
+
+La sesión se mantiene **en RAM**. Exporta antes de cerrar el programa. Pulsa **Ctrl+C** en la terminal para detener el servidor. Los archivos originales permanecen donde tú los hayas guardado.
+
+## 9. Buenas prácticas
+
+Importa únicamente datos para los que tengas autorización. Las MAC y coordenadas de redes y dispositivos Bluetooth son información potencialmente sensible. Las direcciones aleatorias BLE no proporcionan una identidad persistente. No publiques capturas de terceros, geolocalizaciones personales ni identificadores sin revisar.
