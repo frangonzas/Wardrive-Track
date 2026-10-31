@@ -56,7 +56,7 @@ El programa abre su panel web en una URL local del tipo **http://127.0.0.1:PUERT
 
 **No se requieren dependencias de Python ni instalación mediante pip.** Los mapas de calles utilizan Leaflet y teselas de OpenStreetMap a través de Internet; en ausencia de conexión se habilita un plano esquemático.
 
-**Guías:** [Instalación paso a paso](docs/INSTALACION.md) · [Manual completo](docs/USO.md) · [Problemas frecuentes](docs/SOLUCION_PROBLEMAS.md).
+**Guías:** [Instalación paso a paso](docs/INSTALACION.md) · [Manual completo](docs/USO.md) · [Problemas frecuentes](docs/SOLUCION_PROBLEMAS.md) · [Compilación y ejecutables](docs/COMPILACION.md).
 
 ## Novedades de la versión 0.2
 
@@ -113,6 +113,19 @@ Ejemplo de registro de texto admitido:
 ~~~
 
 Consulta [Formatos y datos de ESP32 Marauder](docs/MARAUDER.md) para información específica de sus funciones WiFi Wardrive, Bluetooth Wardrive y registros.
+
+## Ejecutables independientes para Windows, macOS y Linux
+
+Además de ejecutar el código con Python, puedes descargar los **binarios producidos por GitHub Actions** desde [Compilar ejecutables multiplataforma](https://github.com/frangonzas/Wardrive-Track/actions/workflows/build.yml). Una ejecución terminada correctamente publica tres *artifacts* (Windows, macOS y Linux) durante 30 días.
+
+Para compilar localmente, instala PyInstaller solo como **dependencia de construcción**, no de ejecución:
+
+~~~bash
+python3 -m pip install --upgrade pyinstaller
+python3 build.py
+~~~
+
+En Windows usa **py -3**. Consulta [COMPILACION.md](docs/COMPILACION.md) para comandos precisos, descarga de los ZIP y advertencias sobre firma digital y arquitecturas.
 
 ## Operaciones y pruebas
 
