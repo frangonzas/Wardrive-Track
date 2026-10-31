@@ -21,7 +21,7 @@ SUPPORTED = {".pcap", ".pcapng", ".log", ".txt", ".csv"}
 
 class Handler(BaseHTTPRequestHandler):
     session: Session
-    server_version = "WardriveTrack/0.1"
+    server_version = "WardriveTrack/0.2"
 
     def _headers(self, status: int, ctype: str, length: int, extra=None):
         self.send_response(status)
@@ -88,7 +88,7 @@ class Handler(BaseHTTPRequestHandler):
             example = Path(__file__).resolve().parent.parent / "examples"
             self.session.reset()
             reports = []
-            for name in ("ejemplo_wigle.csv", "ruta_gps.log", "captura_ejemplo.pcap"):
+            for name in ("ejemplo_wigle.csv", "ruta_gps.log", "captura_ejemplo.pcap", "ejemplo_bluetooth.csv", "bt_wardrive_demo.log"):
                 reports.append(self.session.import_data(name, (example / name).read_bytes()))
             return self._json({"reports": reports})
         if path.path != "/api/import":
