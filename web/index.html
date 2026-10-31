@@ -1,59 +1,79 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>Wardrive Track · Local Wi-Fi Intelligence</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="theme-color" content="#0a101b">
+<meta name="description" content="Wardrive Track: análisis local de capturas Wi-Fi y Bluetooth/BLE de ESP32 Marauder, con GPS, filtros de cifrado y exportaciones.">
+<title>Wardrive Track · Wireless Intelligence</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="shell">
-  <aside class="sidebar">
-    <div class="brand"><div class="brand-icon">◎</div><div><b>WARDRIVE <span>TRACK</span></b><small>LOCAL NETWORK EXPLORER / 0.1</small></div></div>
-    <div class="side-section"><div class="section-label">ESPACIO DE TRABAJO</div>
-      <div class="nav-selected"><span>◈</span> Panel de análisis <em>ACTIVO</em></div>
-      <p class="side-copy">Importa capturas Wi-Fi y registros GPS. Los datos se procesan en tu propio equipo.</p>
+<aside class="sidebar">
+  <div class="brand"><div class="brand-icon">◎</div><div><b>WARDRIVE <span>TRACK</span></b><small>WIRELESS INTELLIGENCE / v0.2</small></div></div>
+  <div class="side-section"><div class="section-label">ESPACIO DE TRABAJO</div>
+    <div class="nav-selected"><span>◈</span> Explorador de radio <em>EN LÍNEA</em></div>
+    <p class="side-copy">Análisis pasivo de archivos Wi-Fi, Bluetooth y BLE. Visualización de observaciones con GPS, sin rastreo externo.</p>
+  </div>
+  <div class="side-section"><div class="section-label">ARCHIVOS DEL EQUIPO</div>
+    <label class="drop-zone" id="drop" for="fileInput"><span class="upload-symbol">＋</span><strong>Importar capturas</strong><span>Selecciona o arrastra archivos</span><small>PCAP · PCAPNG · CSV · LOG · TXT</small></label>
+    <input type="file" id="fileInput" multiple accept=".pcap,.pcapng,.csv,.log,.txt" hidden>
+    <div class="file-list" id="files"><span class="empty-small">Sin archivos importados</span></div>
+    <button class="action subtle" id="demoBtn" type="button">▸ &nbsp; Cargar demostración completa</button>
+  </div>
+  <div class="side-section"><div class="section-label">REFERENCIA</div>
+    <div class="side-info">Wi-Fi: identificadores BSSID/SSID y seguridad anunciada (OPEN, WEP, WPA, WPA2 y WPA3).</div>
+    <div class="side-info">Bluetooth/BLE: nombres publicitados y direcciones observadas. Un MAC BLE puede ser aleatorio y cambiante.</div>
+  </div>
+  <div class="side-bottom"><div class="status-dot"><i></i> SERVIDOR LOCAL · 127.0.0.1</div><small>Los archivos se procesan localmente. Los mapas de calles, si están activos, solicitan teselas externas. Solo importa capturas autorizadas.</small></div>
+</aside>
+<main class="main">
+  <header class="topbar"><div class="crumb">WORKSPACE <span>/</span> MARAUDER DATA <span>/</span> EXPLORER</div><div class="topright"><span class="online">●</span> ANÁLISIS PASIVO <span class="sep">│</span> <b>v0.2.0</b></div></header>
+  <div class="content">
+    <div class="intro"><div><div class="eyebrow">WIFI / BLUETOOTH / GPS · MULTIPLATAFORMA</div><h1>Wardrive <span>Track</span></h1><p>Explora capturas del ESP32 Marauder y registros compatibles desde una única consola.</p></div><div class="toolbar">
+      <button class="action" id="csvBtn" type="button">↓ CSV</button><button class="action primary" id="geoBtn" type="button">↓ GeoJSON</button>
+    </div></div>
+    <div class="banner"><span>◎</span><div><strong>Observaciones, no ubicaciones de dispositivos</strong><small>El mapa muestra dónde se registró cada señal. Sin datos GPS explícitos o correlacionables, no se dibuja ninguna ubicación.</small></div><a href="https://github.com/frangonzas/Wardrive-Track/blob/main/docs/USO.md" target="_blank" rel="noopener noreferrer">Manual de uso ↗</a></div>
+    <section class="metrics" aria-label="Resumen del análisis">
+      <div class="metric"><span>TOTAL IDENTIFICADORES</span><b id="statNetworks">0</b><small>Únicos por tecnología y MAC</small><div class="metric-icon">◈</div></div>
+      <div class="metric"><span>REDES WI-FI</span><b id="statWifi">0</b><small>BSSID detectados</small><div class="metric-icon mint">⌁</div></div>
+      <div class="metric"><span>BLE / BLUETOOTH</span><b id="statBt">0</b><small>Identificadores observados</small><div class="metric-icon blue">ᛒ</div></div>
+      <div class="metric"><span>CON GEOLOCALIZACIÓN</span><b id="statLocated">0</b><small>Coordenadas observadas</small><div class="metric-icon purple">⌖</div></div>
+    </section>
+    <div class="insights-grid">
+      <section class="insight-card"><div class="panel-head"><div><div class="eyebrow">ESTADO DE LOS DATOS</div><h2>Actividad capturada</h2></div></div>
+        <div class="activity-row"><div><strong id="statSights">0</strong><small>Observaciones</small></div><div><strong id="statGPS">0</strong><small>Puntos GPS</small></div><div><strong id="statFiles">0</strong><small>Archivos</small></div></div>
+      </section>
+      <section class="insight-card"><div class="panel-head"><div><div class="eyebrow">REDES WI-FI</div><h2>Seguridad detectada</h2></div></div>
+        <div class="security-chart" id="securityChart" aria-label="Distribución por seguridad Wi-Fi"><span class="empty-small">Aún no hay redes Wi-Fi</span></div>
+      </section>
     </div>
-    <div class="side-section"><div class="section-label">FUENTES DE DATOS</div>
-      <label class="drop-zone" id="drop" for="fileInput"><span class="upload-symbol">＋</span><strong>Importar archivos</strong><span>Arrastra o selecciona</span><small>.pcap .pcapng .log .txt .csv</small></label>
-      <input type="file" id="fileInput" multiple accept=".pcap,.pcapng,.log,.txt,.csv" hidden>
-      <div class="file-list" id="files"><span class="empty-small">Sin archivos importados</span></div>
-      <button class="action subtle" id="demoBtn">▸ &nbsp; Cargar demostración</button>
-    </div>
-    <div class="side-bottom">
-      <div class="status-dot"><i></i> PROCESAMIENTO LOCAL</div>
-      <small>Redes y GPS no se envían a ningún servidor externo. Los mapas de calles usan teselas de OpenStreetMap cuando hay conexión.</small>
-    </div>
-  </aside>
-  <main class="main">
-    <header class="topbar"><div class="crumb">WORKSPACE <span>/</span> ANALYTICS <span>/</span> OVERVIEW</div><div class="topright"><span class="online">●</span> MOTOR LISTO <span class="sep">│</span> <b>v0.1.0</b></div></header>
-    <div class="content">
-      <div class="intro"><div><div class="eyebrow">ANÁLISIS DE REDES · GEOINT OFFLINE-FIRST</div><h1>Wardrive <span>Track</span></h1><p>Exploración de capturas 802.11, cobertura observada y recorridos GPS.</p></div>
-        <div class="toolbar"><button class="action" id="csvBtn" title="Exportar resumen de redes">↓ CSV</button><button class="action primary" id="geoBtn" title="Exportar puntos y ruta">↓ GeoJSON</button></div>
+    <section class="map-card">
+      <div class="panel-head"><div><div class="eyebrow">GEOGRAFÍA OBSERVADA</div><h2>Mapa de observaciones</h2></div><div class="legend"><span><i class="dot-green"></i> Wi-Fi</span><span><i class="dot-blue"></i> BLE / Bluetooth</span><span><i class="dot-orange"></i> Ruta GPS</span></div></div>
+      <div class="map-region"><div id="map"></div><canvas id="offlineMap"></canvas><div class="map-empty" id="emptyMap"><span class="empty-orbit">◎</span><b>Aún no hay puntos geográficos</b><span>Importa archivos con GPS o prueba los datos de demostración.</span></div><div class="map-label" id="mapLabel">SIN GPS</div></div>
+      <div class="map-foot"><span>⌖ Posición de <strong>observación</strong>, no posición física del emisor.</span><span id="mapCount">0 marcadores · GPS ±8 s</span></div>
+    </section>
+    <section class="table-panel">
+      <div class="panel-head table-title"><div><div class="eyebrow">EXPLORADOR DE CAPTURAS</div><h2>Inventario de radio</h2></div><div class="toolbar">
+        <label class="check"><input type="checkbox" id="filteredExport"> Exportar solo resultados filtrados</label>
+        <button class="link-button" id="resetBtn" type="button">Restablecer filtros ↺</button>
+      </div></div>
+      <div class="filters" aria-label="Filtros combinables">
+        <label><span>BUSCAR NOMBRE / MAC</span><input id="search" type="search" placeholder="SSID, nombre Bluetooth o BSSID…"></label>
+        <label><span>TECNOLOGÍA</span><select id="typeFilter"><option value="all">Todas</option><option value="Wi-Fi">Wi-Fi</option><option value="BLE">BLE</option><option value="Bluetooth">Bluetooth clásico</option></select></label>
+        <label><span>SEGURIDAD WI-FI</span><select id="securityFilter"><option value="all">Todas</option><option>OPEN</option><option>WEP</option><option>WPA</option><option>WPA2</option><option>WPA2/WPA3</option><option>WPA3</option><option>OWE</option><option>No determinada</option></select></label>
+        <label><span>GPS</span><select id="gpsFilter"><option value="all">Todos</option><option value="located">Con GPS</option><option value="unlocated">Sin GPS</option></select></label>
+        <label><span>SEÑAL (dBm)</span><select id="signalFilter"><option value="all">Todas</option><option value="strong">≥ −60</option><option value="medium">−80 a −61</option><option value="weak">< −80</option><option value="unknown">No disponible</option></select></label>
+        <label><span>ORDENAR</span><select id="sortFilter"><option value="signal">Señal mayor</option><option value="name">Nombre A–Z</option><option value="count">Más observaciones</option><option value="last">Más recientes</option></select></label>
       </div>
-      <section class="metrics" aria-label="Resumen de análisis">
-        <div class="metric"><span>REDES DETECTADAS</span><b id="statNetworks">0</b><small>Identificadas por BSSID</small><div class="metric-icon">⌁</div></div>
-        <div class="metric"><span>REDES CON GPS</span><b id="statLocated">0</b><small>Posiciones de observación</small><div class="metric-icon mint">⌖</div></div>
-        <div class="metric"><span>OBSERVACIONES</span><b id="statSights">0</b><small>Capturas y registros</small><div class="metric-icon blue">≋</div></div>
-        <div class="metric"><span>PUNTOS DE RUTA</span><b id="statGPS">0</b><small>Coordenadas de GPS</small><div class="metric-icon purple">◇</div></div>
-      </section>
-      <section class="map-card">
-        <div class="panel-head"><div><div class="eyebrow">VISOR GEOGRÁFICO</div><h2>Mapa de observaciones</h2></div><div class="legend"><span><i class="dot-green"></i> Wi-Fi con GPS</span><span><i class="dot-blue"></i> Recorrido GPS</span></div></div>
-        <div class="map-region"><div id="map"></div><canvas id="offlineMap" aria-label="Plano de puntos sin mapas de calles"></canvas><div class="map-empty" id="emptyMap"><span class="empty-orbit">◎</span><b>Tu mapa comienza aquí</b><span>Importa un registro con GPS o inicia la demostración.</span></div><div class="map-label" id="mapLabel">SIN COORDENADAS</div></div>
-        <div class="map-foot"><span>⌖ &nbsp; Los marcadores indican <strong>dónde se observó</strong> la señal; no necesariamente dónde está el router.</span><span>Correlación GPS ±8 s</span></div>
-      </section>
-      <section class="table-panel"><div class="panel-head"><div><div class="eyebrow">INVENTARIO DE CAPTURA</div><h2>Redes Wi-Fi</h2></div><div class="table-controls"><input id="search" type="search" placeholder="⌕  Buscar SSID o BSSID" aria-label="Buscar redes"><select id="filter" aria-label="Filtro GPS"><option value="all">Todas las redes</option><option value="located">Con GPS</option><option value="unlocated">Sin GPS</option></select></div></div>
-        <div class="table-scroll"><table><thead><tr><th>SSID / BSSID</th><th>CANAL</th><th>SEÑAL</th><th>OBSERVACIONES</th><th>GEOLOCALIZACIÓN</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="no-data">Todavía no hay redes. Importa un archivo para comenzar.</td></tr></tbody></table></div>
-        <div class="table-foot"><span id="resultCount">0 redes en el inventario</span><button class="link-button" id="clearBtn">Limpiar sesión ↺</button></div>
-      </section>
-      <footer>WARDRIVE TRACK <span>✦</span> PRIVACIDAD LOCAL · CAPTURAS AUTORIZADAS · PYTHON STANDARD LIBRARY</footer>
-    </div>
-  </main>
+      <div class="table-scroll"><table><thead><tr><th>NOMBRE / IDENTIFICADOR</th><th>TECNOLOGÍA</th><th>SEGURIDAD</th><th>CANAL</th><th>RSSI</th><th>VECES</th><th>GPS</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="no-data">Importa un archivo para comenzar.</td></tr></tbody></table></div>
+      <div class="table-foot"><span id="resultCount">0 registros</span><button class="link-button" id="clearBtn" type="button">Vaciar sesión ↺</button></div>
+    </section>
+    <footer>WARDRIVE TRACK 0.2 <span>✦</span> PYTHON · ANÁLISIS LOCAL · DOCUMENTACIÓN EN ESPAÑOL</footer>
+  </div>
+</main>
 </div>
 <div role="status" aria-live="polite" class="toast" id="toast"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/app.js"></script>
-</body>
-</html>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="/app.js"></script>
+</body></html>
