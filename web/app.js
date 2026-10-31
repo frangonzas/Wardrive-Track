@@ -1,253 +1,396 @@
 'use strict';
 
-/* Wardrive Track: interfaz web y consumo de la API HTTP local.
- * Nunca se introducen SSID/BSSID sin escapar mediante innerHTML.
+/* Wardrive Track v0.2.0 — interfaz sin frameworks.
+ * Los SSID, nombres Bluetooth y MAC siempre se insertan como textContent.
+ * Los filtros son locales y no envían datos a servicios de terceros.
  */
-let state = { networks: [], track: [], files: [], stats: {} };
-let map = null, markers = null, trackLayer = null, offline = false, toastTimer = null;
-const byId = (id) => document.getElementById(id);
-const fmt = (value) => new Intl.NumberFormat('es-ES').format(value || 0);
+const el = (id) => document.getElementById(id);
+const number = (value) => new Intl.NumberFormat('es-ES').format(value || 0);
+const FILTER_IDS = ['search', 'typeFilter', 'securityFilter', 'gpsFilter', 'signalFilter', 'sortFilter'];
+const CSV_FIELDS = ['protocol', 'bssid', 'ssid', 'security', 'channel', 'rssi', 'rssi_min', 'count', 'located_count', 'lat', 'lon', 'first_seen', 'last_seen', 'address_type'];
+const SECURITY_ORDER = ['OPEN', 'WEP', 'WPA', 'WPA2', 'WPA2/WPA3', 'WPA3', 'OWE', 'No determinada'];
+let state = { networks: [], track: [], files: [], stats: {}, security: {} };
+let map = null, layers = null, route = null, offline = false, notificationTimer = null;
+let tileErrors = 0;
 
 function notify(message, error = false) {
-  const el = byId('toast');
-  el.textContent = message;
-  el.classList.toggle('error', error);
-  el.style.display = 'block';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 5500);
+  const toast = el('toast');
+  toast.textContent = message;
+  toast.classList.toggle('error', error);
+  toast.style.display = 'block';
+  clearTimeout(notificationTimer);
+  notificationTimer = setTimeout(() => { toast.style.display = 'none'; }, 6500);
 }
+
 async function request(path, options) {
   const response = await fetch(path, options);
-  const data = await response.json();
-  if (!response.ok) throw Error(data.error || 'Error de conexión');
+  let data;
+  try { data = await response.json(); } catch (_) { throw Error('El servidor devolvió una respuesta no válida'); }
+  if (!response.ok) throw Error(data.error || 'Error en la operación');
   return data;
 }
-function download(path) { window.location.href = path; }
 
-function setupMap() {
-  if (typeof L === 'undefined') {
-    offline = true;
-    byId('offlineMap').style.display = 'block';
-    byId('mapLabel').textContent = 'PLANO OFFLINE · GPS';
+function filtered() {
+  const q = el('search').value.trim().toLocaleLowerCase('es');
+  const type = el('typeFilter').value;
+  const security = el('securityFilter').value;
+  const gps = el('gpsFilter').value;
+  const signal = el('signalFilter').value;
+  const sort = el('sortFilter').value;
+  const rows = state.networks.filter((n) => {
+    if (q && ![n.ssid || '', n.bssid || '', n.protocol || '', n.security || ''].some((s) => s.toLocaleLowerCase('es').includes(q))) return false;
+    if (type !== 'all' && n.protocol !== type) return false;
+    if (security !== 'all' && n.security !== security) return false;
+    const located = n.lat !== null && n.lon !== null;
+    if (gps === 'located' && !located) return false;
+    if (gps === 'unlocated' && located) return false;
+    if (signal === 'unknown' && n.rssi !== null) return false;
+    if (signal === 'strong' && (n.rssi === null || n.rssi < -60)) return false;
+    if (signal === 'medium' && (n.rssi === null || n.rssi < -80 || n.rssi >= -60)) return false;
+    if (signal === 'weak' && (n.rssi === null || n.rssi >= -80)) return false;
+    return true;
+  });
+  if (sort === 'name') rows.sort((a, b) => a.ssid.localeCompare(b.ssid, 'es'));
+  else if (sort === 'count') rows.sort((a, b) => b.count - a.count);
+  else if (sort === 'last') rows.sort((a, b) => (b.last_seen || '').localeCompare(a.last_seen || ''));
+  else rows.sort((a, b) => (b.rssi === null ? -999 : b.rssi) - (a.rssi === null ? -999 : a.rssi));
+  return rows;
+}
+
+function cell(row, value, className) {
+  const td = document.createElement('td');
+  if (className) td.className = className;
+  if (value instanceof Node) td.appendChild(value);
+  else td.textContent = String(value);
+  row.appendChild(td);
+  return td;
+}
+function chip(text, classes) {
+  const span = document.createElement('span');
+  span.className = classes;
+  span.textContent = text;
+  return span;
+}
+function securityClass(s) {
+  if (['WEP', 'WPA'].includes(s)) return 'legacy';
+  if (['WPA2', 'WPA3', 'WPA2/WPA3', 'OWE'].includes(s)) return 'modern';
+  if (s === 'OPEN') return 'open';
+  return 'unknown';
+}
+
+function renderRows(list) {
+  const table = el('rows');
+  table.replaceChildren();
+  if (!list.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, state.networks.length ? 'No existen coincidencias con los filtros seleccionados.' : 'No hay datos. Importa una captura o carga la demostración.', 'no-data');
+    td.colSpan = 7;
+    table.appendChild(tr);
+  }
+  for (const n of list.slice(0, 1500)) {
+    const tr = document.createElement('tr');
+    const identity = document.createElement('div');
+    identity.appendChild(chip(n.ssid || '(sin nombre)', 'ssid'));
+    identity.appendChild(chip(n.bssid, 'bssid'));
+    cell(tr, identity);
+    const tag = n.protocol === 'Wi-Fi' ? 'wifi' : n.protocol === 'BLE' ? 'ble' : 'bt';
+    cell(tr, chip(n.protocol, 'type-pill ' + tag));
+    cell(tr, chip(n.protocol === 'Wi-Fi' ? n.security : '—', 'security-pill ' + securityClass(n.security)));
+    cell(tr, n.channel === null ? '—' : n.channel);
+    cell(tr, n.rssi === null ? '—' : n.rssi + ' dBm', 'signal');
+    cell(tr, number(n.count));
+    cell(tr, chip(n.lat === null ? '— Sin GPS' : '⌖ Con GPS', 'pill ' + (n.lat === null ? 'no' : 'yes')));
+    table.appendChild(tr);
+  }
+  el('resultCount').textContent = number(list.length) + ' identificadores visibles de ' + number(state.networks.length) +
+    (list.length > 1500 ? ' · se muestran 1.500 para mantener la fluidez' : '');
+}
+
+function drawSecurity() {
+  const chart = el('securityChart');
+  chart.replaceChildren();
+  const max = Math.max(...SECURITY_ORDER.map((s) => state.security[s] || 0), 0);
+  if (!max) {
+    chart.appendChild(chip('Todavía no hay redes Wi-Fi para clasificar.', 'empty-small'));
     return;
   }
-  map = L.map('map', { zoomControl: false, attributionControl: true }).setView([20, 0], 2);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
-  markers = L.layerGroup().addTo(map);
+  for (const label of SECURITY_ORDER) {
+    const count = state.security[label] || 0;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'security-item';
+    const top = document.createElement('div');
+    top.className = 'security-top';
+    top.appendChild(chip(label, ''));
+    top.appendChild(chip(number(count), ''));
+    top.lastChild.style.fontWeight = '700';
+    const rail = document.createElement('div');
+    rail.className = 'security-track';
+    const bar = document.createElement('div');
+    bar.className = 'security-fill';
+    bar.style.width = (count / max * 100).toFixed(1) + '%';
+    rail.appendChild(bar);
+    wrapper.append(top, rail);
+    wrapper.title = label + ': ' + count + ' redes';
+    chart.appendChild(wrapper);
+  }
 }
-function dataPoints() {
+
+function initMap() {
+  if (typeof L === 'undefined') { switchOffline(); return; }
+  map = L.map('map', { zoomControl: false }).setView([20, 0], 2);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap contributors'
+  });
+  tiles.on('tileerror', () => {
+    tileErrors += 1;
+    if (tileErrors >= 3 && !offline) switchOffline();
+  });
+  tiles.addTo(map);
+  layers = L.layerGroup().addTo(map);
+}
+
+function switchOffline() {
+  offline = true;
+  if (map) {
+    map.remove();
+    map = null;
+  }
+  el('map').style.display = 'none';
+  el('offlineMap').style.display = 'block';
+  drawOffline();
+}
+
+function geoPoints(list) {
   return {
-    nets: state.networks.filter((n) => n.lat !== null && n.lon !== null),
-    points: state.track.filter((p) => p.lat !== null && p.lon !== null)
+    nets: list.filter((n) => n.lat !== null && n.lon !== null),
+    track: state.track.filter((p) => p.lat !== null && p.lon !== null),
   };
 }
-function updateMap() {
-  const { nets, points } = dataPoints();
-  const hasGeo = nets.length > 0 || points.length > 0;
-  byId('emptyMap').style.display = hasGeo ? 'none' : 'flex';
-  byId('mapLabel').textContent = hasGeo ?
-    fmt(nets.length) + ' REDES · ' + fmt(points.length) + ' GPS' + (offline ? ' · PLANO OFFLINE' : '') :
-    'SIN COORDENADAS';
-  if (offline) { drawOffline(); return; }
+
+function tooltip(node, label, value) {
+  const p = document.createElement('div');
+  p.textContent = label + ': ' + value;
+  node.appendChild(p);
+}
+
+function renderMap(list) {
+  const { nets, track } = geoPoints(list);
+  const hasGeo = nets.length || track.length;
+  el('emptyMap').style.display = hasGeo ? 'none' : 'flex';
+  el('mapCount').textContent = number(nets.length) + ' marcadores visibles · GPS ±8 s';
+  el('mapLabel').textContent = hasGeo ?
+    number(nets.length) + ' MARCADORES · ' + number(track.length) + ' GPS' + (offline ? ' · PLANO LOCAL' : '') : 'SIN GPS';
+  if (offline) { drawOffline(list); return; }
   if (!map) return;
-  markers.clearLayers();
-  if (trackLayer) { map.removeLayer(trackLayer); trackLayer = null; }
-  if (points.length > 1) {
-    trackLayer = L.polyline(points.map((p) => [p.lat, p.lon]), {
-      color: '#67adf5', weight: 3, opacity: 0.85
-    }).addTo(map);
+  layers.clearLayers();
+  if (route) { map.removeLayer(route); route = null; }
+  if (track.length > 1) {
+    route = L.polyline(track.map((p) => [p.lat, p.lon]), { color: '#f2bb72', weight: 3, opacity: 0.85 }).addTo(map);
   }
-  if (points.length === 1) {
-    L.circleMarker([points[0].lat, points[0].lon], {
-      radius: 5, color: '#67adf5'
-    }).addTo(markers);
+  if (track.length === 1) {
+    L.circleMarker([track[0].lat, track[0].lon], { radius: 4, color: '#f2bb72' }).addTo(layers);
   }
   for (const n of nets.slice(0, 4500)) {
-    const marker = L.circleMarker([n.lat, n.lon], {
-      radius: 6, fillColor: '#41e4b0', color: '#092e2d', weight: 1.5, fillOpacity: 0.88
+    const wifi = n.protocol === 'Wi-Fi';
+    const point = L.circleMarker([n.lat, n.lon], {
+      radius: 6, color: '#071d29', weight: 1.5, fillOpacity: 0.9,
+      fillColor: wifi ? '#4ce2b9' : '#78baff'
     });
     const popup = document.createElement('div');
-    const heading = document.createElement('strong');
-    heading.textContent = n.ssid;
-    popup.appendChild(heading);
-    for (const pair of [
-      ['BSSID', n.bssid],
-      ['Señal', n.rssi === null ? 'Sin dato' : String(n.rssi) + ' dBm'],
-      ['Observaciones', String(n.count)],
-      ['Ubicación', 'Punto de observación GPS']
-    ]) {
-      const detail = document.createElement('div');
-      detail.textContent = pair[0] + ': ' + pair[1];
-      popup.appendChild(detail);
-    }
-    marker.bindPopup(popup).addTo(markers);
+    const title = document.createElement('strong');
+    title.textContent = n.ssid;
+    popup.appendChild(title);
+    tooltip(popup, 'Tecnología', n.protocol);
+    tooltip(popup, 'MAC observada', n.bssid);
+    if (wifi) tooltip(popup, 'Seguridad', n.security);
+    tooltip(popup, 'Señal máxima', n.rssi === null ? 'No disponible' : n.rssi + ' dBm');
+    tooltip(popup, 'Interpretación', 'Lugar de observación');
+    point.bindPopup(popup).addTo(layers);
   }
-  const all = nets.map((n) => [n.lat, n.lon]).concat(points.map((p) => [p.lat, p.lon]));
-  if (all.length) map.fitBounds(L.latLngBounds(all), { padding: [35, 35], maxZoom: 16 });
+  const locations = nets.map((p) => [p.lat, p.lon]).concat(track.map((p) => [p.lat, p.lon]));
+  if (locations.length) map.fitBounds(L.latLngBounds(locations), { padding: [32, 32], maxZoom: 16 });
 }
-function drawOffline() {
-  const canvas = byId('offlineMap');
-  const ctx = canvas.getContext('2d');
+
+function drawOffline(list = filtered()) {
+  const canvas = el('offlineMap'), ctx = canvas.getContext('2d');
   if (!ctx) return;
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  const w = rect.width, h = rect.height, dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(w * dpr));
+  canvas.height = Math.max(1, Math.round(h * dpr));
   ctx.scale(dpr, dpr);
-  const w = rect.width, h = rect.height;
-  ctx.fillStyle = '#10202d';
-  ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = '#1e3847';
-  ctx.lineWidth = 1;
+  ctx.fillStyle = '#10202d'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#223e4c';
   for (let i = 0; i <= 12; i++) {
-    const x = i * w / 12, y = i * h / 12;
     ctx.beginPath();
-    ctx.moveTo(x, 0); ctx.lineTo(x, h);
-    ctx.moveTo(0, y); ctx.lineTo(w, y);
+    ctx.moveTo(i * w / 12, 0); ctx.lineTo(i * w / 12, h);
+    ctx.moveTo(0, i * h / 12); ctx.lineTo(w, i * h / 12);
     ctx.stroke();
   }
-  const { nets, points } = dataPoints();
-  const all = nets.concat(points);
+  const { nets, track } = geoPoints(list);
+  const all = [...nets, ...track];
   if (!all.length) return;
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-  for (const p of all) {
-    minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
-    minLon = Math.min(minLon, p.lon); maxLon = Math.max(maxLon, p.lon);
-  }
-  const centerLat = (minLat + maxLat) / 2, centerLon = (minLon + maxLon) / 2;
-  const cos = Math.max(0.2, Math.cos(centerLat * Math.PI / 180));
-  const span = Math.max((maxLon - minLon) * cos, maxLat - minLat, 0.0005) * 1.35;
-  const scale = Math.min(w, h) / span * 0.72;
-  const fx = (p) => w / 2 + (p.lon - centerLon) * cos * scale;
-  const fy = (p) => h / 2 - (p.lat - centerLat) * scale;
-  if (points.length > 1) {
-    ctx.beginPath();
-    points.forEach((p, i) => { if (i === 0) ctx.moveTo(fx(p), fy(p)); else ctx.lineTo(fx(p), fy(p)); });
-    ctx.strokeStyle = '#6caef4'; ctx.lineWidth = 2.5; ctx.stroke();
+  const lats = all.map((p) => p.lat), lons = all.map((p) => p.lon);
+  const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const centerLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+  const xRatio = Math.max(0.2, Math.cos(centerLat * Math.PI / 180));
+  const span = Math.max((Math.max(...lons) - Math.min(...lons)) * xRatio,
+    Math.max(...lats) - Math.min(...lats), 0.0005) * 1.4;
+  const scale = Math.min(w, h) * 0.75 / span;
+  const x = (p) => w/2 + (p.lon - centerLon) * xRatio * scale;
+  const y = (p) => h/2 - (p.lat - centerLat) * scale;
+  if (track.length > 1) {
+    ctx.strokeStyle = '#f2bb72'; ctx.lineWidth = 3; ctx.beginPath();
+    track.forEach((p, i) => i ? ctx.lineTo(x(p), y(p)) : ctx.moveTo(x(p), y(p)));
+    ctx.stroke();
   }
   for (const p of nets) {
-    ctx.beginPath(); ctx.arc(fx(p), fy(p), 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#41e4b0'; ctx.fill();
-    ctx.strokeStyle = '#082d2a'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x(p), y(p), 6, 0, Math.PI*2);
+    ctx.fillStyle = p.protocol === 'Wi-Fi' ? '#4ce2b9' : '#78baff';
+    ctx.fill(); ctx.strokeStyle = '#071d29'; ctx.lineWidth = 2; ctx.stroke();
   }
-  ctx.fillStyle = '#8fa9b8'; ctx.font = '11px system-ui';
-  ctx.fillText('Lat ' + centerLat.toFixed(5) + ' · Lon ' + centerLon.toFixed(5) + ' | Plano esquemático', 16, h - 16);
+  ctx.fillStyle = '#9bb4c4'; ctx.font = '11px system-ui';
+  ctx.fillText('Plano esquemático · Centro GPS ' + centerLat.toFixed(5) + ', ' + centerLon.toFixed(5), 14, h - 16);
 }
-function renderRows() {
-  const query = byId('search').value.trim().toLowerCase();
-  const filter = byId('filter').value;
-  const matched = state.networks.filter((n) =>
-    (n.ssid.toLowerCase().includes(query) || n.bssid.toLowerCase().includes(query)) &&
-    (filter === 'all' || (filter === 'located' ? n.lat !== null : n.lat === null))
-  );
-  const rows = byId('rows');
-  rows.replaceChildren();
-  if (!matched.length) {
-    const tr = document.createElement('tr'), td = document.createElement('td');
-    td.colSpan = 5; td.className = 'no-data';
-    td.textContent = state.networks.length ? 'No hay resultados para este filtro.' : 'Todavía no hay redes. Importa un archivo para comenzar.';
-    tr.appendChild(td); rows.appendChild(tr);
-  }
-  for (const n of matched.slice(0, 1000)) {
-    const tr = document.createElement('tr');
-    const name = document.createElement('td');
-    const ssid = document.createElement('span'), bssid = document.createElement('span');
-    ssid.className = 'ssid'; ssid.textContent = n.ssid;
-    bssid.className = 'bssid'; bssid.textContent = n.bssid;
-    name.append(ssid, bssid); tr.appendChild(name);
-    const channel = document.createElement('td');
-    channel.textContent = n.channel === null ? '—' : String(n.channel);
-    tr.appendChild(channel);
-    const signal = document.createElement('td');
-    signal.className = 'signal';
-    signal.textContent = n.rssi === null ? '—' : String(n.rssi) + ' dBm';
-    tr.appendChild(signal);
-    const count = document.createElement('td');
-    count.textContent = fmt(n.count);
-    tr.appendChild(count);
-    const location = document.createElement('td');
-    const pill = document.createElement('span');
-    pill.className = 'pill ' + (n.lat !== null ? 'yes' : 'no');
-    pill.textContent = n.lat !== null ? '⌖ GPS observado' : '— Sin GPS';
-    location.appendChild(pill); tr.appendChild(location);
-    rows.appendChild(tr);
-  }
-  byId('resultCount').textContent = fmt(matched.length) + ' redes encontradas' +
-    (matched.length > 1000 ? ' · mostrando primeras 1.000' : '');
-}
-function refresh() {
-  byId('statNetworks').textContent = fmt(state.stats.networks);
-  byId('statLocated').textContent = fmt(state.stats.located);
-  byId('statSights').textContent = fmt(state.stats.sightings);
-  byId('statGPS').textContent = fmt(state.stats.gps);
-  const list = byId('files'); list.replaceChildren();
+
+function renderFiles() {
+  const list = el('files');
+  list.replaceChildren();
   if (!state.files.length) {
-    const empty = document.createElement('span');
-    empty.className = 'empty-small'; empty.textContent = 'Sin archivos importados';
-    list.appendChild(empty);
+    list.appendChild(chip('Sin archivos importados', 'empty-small'));
+    return;
   }
   for (const f of state.files) {
-    const div = document.createElement('div'), detail = document.createElement('small');
-    div.className = 'file-chip'; div.textContent = '▤ ' + f.name;
-    detail.textContent = fmt(f.observations) + ' observaciones · ' + fmt(f.gps) + ' puntos GPS';
-    div.appendChild(detail); list.appendChild(div);
+    const item = document.createElement('div');
+    item.className = 'file-chip';
+    item.textContent = '▤ ' + f.name;
+    const description = document.createElement('small');
+    description.textContent = number(f.observations) + ' observaciones · ' + number(f.gps) + ' GPS';
+    item.appendChild(description);
+    list.appendChild(item);
   }
-  renderRows(); updateMap();
 }
-async function sync() { state = await request('/api/status'); refresh(); }
-async function upload(files) {
+
+function render() {
+  el('statNetworks').textContent = number(state.stats.networks);
+  el('statWifi').textContent = number(state.stats.wifi);
+  el('statBt').textContent = number((state.stats.ble || 0) + (state.stats.bluetooth || 0));
+  el('statLocated').textContent = number(state.stats.located);
+  el('statSights').textContent = number(state.stats.sightings);
+  el('statGPS').textContent = number(state.stats.gps);
+  el('statFiles').textContent = number(state.stats.files);
+  renderFiles();
+  drawSecurity();
+  renderFiltered();
+}
+function renderFiltered() {
+  const list = filtered();
+  renderRows(list);
+  renderMap(list);
+}
+async function sync() {
+  state = await request('/api/status');
+  render();
+}
+
+async function importFiles(files) {
   for (const file of files) {
     try {
-      const extension = file.name.toLowerCase().split('.').pop();
-      if (!['pcap', 'pcapng', 'log', 'txt', 'csv'].includes(extension)) throw Error(file.name + ': extensión no válida');
-      if (file.size > 32 * 1024 * 1024) throw Error(file.name + ': máximo 32 MiB');
-      const result = await request('/api/import?name=' + encodeURIComponent(file.name), {
-        method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' }
+      if (!/\.(pcap|pcapng|csv|log|txt)$/i.test(file.name)) throw Error('Extensión no reconocida: ' + file.name);
+      if (file.size > 32 * 1024 * 1024) throw Error('Archivo superior a 32 MiB: ' + file.name);
+      const report = await request('/api/import?name=' + encodeURIComponent(file.name), {
+        method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' },
       });
-      notify(file.name + ': ' + result.observations + ' observaciones, ' + result.gps +
-        ' GPS. ' + result.warnings.join(' '));
+      notify(file.name + ' · ' + report.observations + ' registros, ' + report.gps +
+        ' GPS. ' + (report.warnings || []).join(' '));
     } catch (error) { notify(error.message, true); }
   }
   await sync();
 }
-byId('fileInput').addEventListener('change', (event) => {
-  upload(Array.from(event.target.files));
-  event.target.value = '';
-});
-const zone = byId('drop');
-for (const type of ['dragenter', 'dragover']) {
-  zone.addEventListener(type, (event) => {
-    event.preventDefault(); zone.classList.add('drag');
-  });
+
+function downloadBlob(filename, mime, data) {
+  const blob = new Blob([data], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-for (const type of ['dragleave', 'drop']) {
-  zone.addEventListener(type, (event) => {
-    event.preventDefault(); zone.classList.remove('drag');
-  });
+function safeCSV(v) {
+  let text = v === null || v === undefined ? '' : String(v);
+  if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+  return '"' + text.replaceAll('"', '""') + '"';
 }
-zone.addEventListener('drop', (event) => upload(Array.from(event.dataTransfer.files)));
-byId('demoBtn').addEventListener('click', async () => {
-  if (state.files.length && !confirm('La demostración sustituirá los archivos de esta sesión. ¿Continuar?')) return;
-  try {
-    await request('/api/demo', { method: 'POST' }); await sync();
-    notify('Demostración cargada: CSV, log GPS y PCAP sintéticos.');
-  } catch (error) { notify(error.message, true); }
+function exportCSV(rows) {
+  const lines = [CSV_FIELDS.join(',')];
+  for (const row of rows) lines.push(CSV_FIELDS.map((f) => safeCSV(row[f])).join(','));
+  downloadBlob('wardrive-track-filtrado.csv', 'text/csv;charset=utf-8', '\ufeff' + lines.join('\r\n'));
+}
+function exportGeoJSON(rows) {
+  const features = [];
+  for (const n of rows) {
+    if (n.lat === null || n.lon === null) continue;
+    const properties = {};
+    for (const [key, value] of Object.entries(n)) {
+      if (key !== 'lat' && key !== 'lon') properties[key] = value;
+    }
+    features.push({ type: 'Feature', properties,
+      geometry: { type: 'Point', coordinates: [n.lon, n.lat] } });
+  }
+  const points = state.track.filter((p) => p.lat !== null && p.lon !== null);
+  if (points.length > 1) features.push({
+    type: 'Feature', properties: { kind: 'track', name: 'Recorrido GPS' },
+    geometry: { type: 'LineString', coordinates: points.map((p) => [p.lon, p.lat]) }
+  });
+  downloadBlob('wardrive-track-filtrado.geojson', 'application/geo+json',
+    JSON.stringify({ type: 'FeatureCollection', features }, null, 2));
+}
+
+el('fileInput').addEventListener('change', (ev) => {
+  void importFiles(Array.from(ev.target.files));
+  ev.target.value = '';
 });
-byId('clearBtn').addEventListener('click', async () => {
-  if (!confirm('¿Borrar los datos importados de esta sesión local?')) return;
-  try {
-    await request('/api/clear', { method: 'POST' }); await sync(); notify('Sesión limpiada');
-  } catch (error) { notify(error.message, true); }
+const drop = el('drop');
+for (const event of ['dragover', 'dragenter']) drop.addEventListener(event, (ev) => {
+  ev.preventDefault(); drop.classList.add('drag');
 });
-byId('csvBtn').addEventListener('click', () => download('/api/export.csv'));
-byId('geoBtn').addEventListener('click', () => download('/api/export.geojson'));
-byId('search').addEventListener('input', renderRows);
-byId('filter').addEventListener('change', renderRows);
+for (const event of ['dragleave', 'drop']) drop.addEventListener(event, (ev) => {
+  ev.preventDefault(); drop.classList.remove('drag');
+});
+drop.addEventListener('drop', (ev) => void importFiles(Array.from(ev.dataTransfer.files)));
+for (const id of FILTER_IDS) el(id).addEventListener(id === 'search' ? 'input' : 'change', renderFiltered);
+el('resetBtn').addEventListener('click', () => {
+  for (const id of FILTER_IDS) el(id).value = id === 'search' ? '' : id === 'sortFilter' ? 'signal' : 'all';
+  renderFiltered();
+});
+el('demoBtn').addEventListener('click', async () => {
+  if (state.files.length && !confirm('La demostración reemplazará tu sesión actual. ¿Continuar?')) return;
+  try {
+    await request('/api/demo', { method: 'POST' });
+    await sync();
+    notify('Demostración Wi-Fi + Bluetooth/BLE cargada correctamente.');
+  } catch (err) { notify(err.message, true); }
+});
+el('clearBtn').addEventListener('click', async () => {
+  if (!confirm('¿Vaciar la sesión de análisis actual?')) return;
+  try {
+    await request('/api/clear', { method: 'POST' });
+    await sync();
+    notify('Se ha vaciado la sesión.');
+  } catch (err) { notify(err.message, true); }
+});
+el('csvBtn').addEventListener('click', () => {
+  if (el('filteredExport').checked) exportCSV(filtered());
+  else window.location.href = '/api/export.csv';
+});
+el('geoBtn').addEventListener('click', () => {
+  if (el('filteredExport').checked) exportGeoJSON(filtered());
+  else window.location.href = '/api/export.geojson';
+});
 window.addEventListener('resize', () => {
-  if (offline) drawOffline(); else if (map) map.invalidateSize();
+  if (offline) drawOffline();
+  else if (map) map.invalidateSize();
 });
-setupMap();
-sync().catch((error) => notify('No se pudo establecer conexión local: ' + error.message, true));
+initMap();
+void sync().catch((err) => notify('No se pudo conectar al servicio local: ' + err.message, true));
