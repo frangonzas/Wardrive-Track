@@ -95,3 +95,17 @@ Si tienes cambios locales, guárdalos primero con un commit o una copia de segur
 ## Abrí la interfaz y perdí los resultados al cerrar
 
 Es el comportamiento previsto: la sesión vive en RAM. Usa **Exportar CSV** o **Exportar GeoJSON** antes de detener el servidor.
+
+## El archivo Bluetooth/BLE aparece como Wi-Fi o no tiene nombre
+
+Comprueba que el CSV tiene la columna **Type** con valores **BLE** o **BT** y que la fila contiene el número correcto de columnas. Los registros con formato WiGLE suelen tener una primera línea de información y una segunda de cabeceras. En LOG/TXT se reconoce **BLE**/**Bluetooth** o el prefijo de archivo **bt_wardrive** como alternativa cuando no hay columna Type.
+
+No todos los anuncios BLE contienen un nombre. Las direcciones BLE aleatorias pueden rotar; una MAC no identifica necesariamente un equipo físico persistente.
+
+## La seguridad sale «No determinada»
+
+No todas las capturas incluyen elementos de seguridad 802.11 completos. Importa capturas de beacon/probe-response y comprueba si se incluyen **RSN/WPA IE**. Un archivo con solo tramas de datos puede no proporcionar esta información.
+
+## El ejecutable compilado no arranca
+
+Consulta [COMPILACION.md](COMPILACION.md). Asegúrate de seleccionar un binario compilado para tu sistema operativo y arquitectura; las compilaciones no están firmadas digitalmente. Como alternativa, ejecuta la aplicación directamente desde el código con **python3 run.py** o **py -3 run.py**.
